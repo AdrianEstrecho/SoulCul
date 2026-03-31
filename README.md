@@ -1,5 +1,15 @@
 # React + Vite
 
+## Backend Developer Setup (PHP + MySQL)
+
+For backend onboarding and local environment setup, see:
+
+- [BACKEND_SETUP_GUIDE.md](./guides/BACKEND_SETUP_GUIDE.md)
+
+For shared API standards between customer and admin/backend tracks, see:
+
+- [API_CONTRACT.md](./guides/API_CONTRACT.md)
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
