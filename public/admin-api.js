@@ -1,7 +1,14 @@
 // Admin API Service Layer
 // Connects the frontend admin panel to the PHP backend API
 
-const API_BASE_URL = 'http://localhost/soucul';
+const isLocalVitePort =
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
+  /^517\d$/.test(window.location.port || '');
+
+const API_BASE_URL = (
+  window.SOUCUL_ADMIN_API_BASE_URL ||
+  (isLocalVitePort ? '' : 'http://localhost:8000')
+).replace(/\/+$/, '');
 
 class AdminAPI {
   constructor() {
@@ -157,7 +164,185 @@ class AdminAPI {
   async healthCheck() {
     return await this.request('/health', { skipAuth: true });
   }
+  async getVouchers(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = `/api/v1/admin/vouchers${queryString ? '?' + queryString : ''}`;
+    return await this.request(endpoint);
+  }
+
+  async getVoucherDetails(voucherId) {
+    return await this.request(`/api/v1/admin/vouchers/${voucherId}`);
+  }
+
+  async createVoucher(voucherData) {
+    return await this.request('/api/v1/admin/vouchers', {
+      method: 'POST',
+      body: JSON.stringify(voucherData)
+    });
+  }
+
+  async updateVoucher(voucherId, voucherData) {
+    return await this.request(`/api/v1/admin/vouchers/${voucherId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(voucherData)
+    });
+  }
+
+  async deleteVoucher(voucherId) {
+    return await this.request(`/api/v1/admin/vouchers/${voucherId}`, {
+      method: 'DELETE'
+    });
+  }
+
+  async toggleVoucherStatus(voucherId) {
+    return await this.request(`/api/v1/admin/vouchers/${voucherId}/toggle`, {
+      method: 'PATCH'
+    });
+  }
+
+  // ── ARCHIVED PRODUCTS ────────────────────────────────
+
+  async getArchivedProducts(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = `/api/v1/admin/archive/products${queryString ? '?' + queryString : ''}`;
+    return await this.request(endpoint);
+  }
+
+  async restoreArchivedProduct(productId) {
+    return await this.request(`/api/v1/admin/archive/products/${productId}/restore`, {
+      method: 'PATCH'
+    });
+  }
+
+  async permanentlyDeleteProduct(productId) {
+    return await this.request(`/api/v1/admin/archive/products/${productId}`, {
+      method: 'DELETE'
+    });
+  }
+
+  // ── ARCHIVED USERS ───────────────────────────────────
+
+  async getArchivedUsers(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = `/api/v1/admin/archive/users${queryString ? '?' + queryString : ''}`;
+    return await this.request(endpoint);
+  }
+
+  async restoreArchivedUser(userId) {
+    return await this.request(`/api/v1/admin/archive/users/${userId}/restore`, {
+      method: 'PATCH'
+    });
+  }
+
+  async permanentlyDeleteUser(userId) {
+    return await this.request(`/api/v1/admin/archive/users/${userId}`, {
+      method: 'DELETE'
+    });
+  }
+
+  // ── ARCHIVED ORDERS ──────────────────────────────────
+
+  async getArchivedOrders(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = `/api/v1/admin/archive/orders${queryString ? '?' + queryString : ''}`;
+    return await this.request(endpoint);
+  }
+
+  async restoreArchivedOrder(orderId) {
+    return await this.request(`/api/v1/admin/archive/orders/${orderId}/restore`, {
+      method: 'PATCH'
+    });
+  }
+
+  async permanentlyDeleteOrder(orderId) {
+    return await this.request(`/api/v1/admin/archive/orders/${orderId}`, {
+      method: 'DELETE'
+    });
+  }
+
+  // ── AUDIT TRAIL ──────────────────────────────────────
+
+  async getAuditLogs(params = {}) {
+    // Supported params: action, entity, admin_id, date_from, date_to, page, limit
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = `/api/v1/admin/audit${queryString ? '?' + queryString : ''}`;
+    return await this.request(endpoint);
+  }
+
+  async exportAuditLogs(params = {}) {
+    // Returns a downloadable CSV/JSON export of audit logs
+    const queryString = new URLSearchParams({ ...params, export: 'csv' }).toString();
+    const endpoint = `/api/v1/admin/audit/export?${queryString}`;
+    return await this.request(endpoint);
+  }
+
+  // ── SECURITY & PROFILE ───────────────────────────────
+
+  async updateProfile(profileData) {
+    // profileData: { username, email, fname, lname, phone }
+    return await this.request('/api/v1/admin/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(profileData)
+    });
+  }
+
+  async changePassword(passwordData) {
+    // passwordData: { current_password, new_password, confirm_password }
+    return await this.request('/api/v1/admin/profile/password', {
+      method: 'POST',
+      body: JSON.stringify(passwordData)
+    });
+  }
+
+  async getActiveSessions() {
+    return await this.request('/api/v1/admin/profile/sessions');
+  }
+
+  async revokeAllSessions() {
+    return await this.request('/api/v1/admin/profile/sessions', {
+      method: 'DELETE'
+    });
+  }
+
+  // ── DASHBOARD EXTRAS ─────────────────────────────────
+
+  async getSalesAnalytics(params = {}) {
+    // params: { period: 'daily' | 'weekly' | 'monthly', date_from, date_to }
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = `/api/v1/admin/dashboard/analytics${queryString ? '?' + queryString : ''}`;
+    return await this.request(endpoint);
+  }
+
+  async getTopProducts(limit = 5) {
+    return await this.request(`/api/v1/admin/dashboard/top-products?limit=${limit}`);
+  }
+
+  async getLowStockAlerts(threshold = 10) {
+    return await this.request(`/api/v1/admin/dashboard/low-stock?threshold=${threshold}`);
+  }
+
+  // ── UTILITY HELPERS ──────────────────────────────────
+
+  isAuthenticated() {
+    return !!this.token;
+  }
+
+  getStoredAdmin() {
+    try {
+      const raw = localStorage.getItem('admin_user');
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  setBaseURL(url) {
+    this.baseURL = url;
+  }
+
 }
 
+
+
 // Create and export a singleton instance
-const adminAPI = new AdminAPI();
+// const adminAPI = new AdminAPI();

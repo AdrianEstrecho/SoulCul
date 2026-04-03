@@ -10,18 +10,50 @@ require_once __DIR__ . '/../../shared/middleware/auth.php';
 
 // ── CORS ──────────────────────────────────────────────────
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');  // restrict to your frontend domain in production
-header('Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
+
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+
+$isAllowedLocalOrigin = false;
+if ($origin !== '') {
+    $originParts = parse_url($origin);
+    $originHost = $originParts['host'] ?? '';
+    $originScheme = $originParts['scheme'] ?? '';
+    $isAllowedLocalOrigin = $originScheme === 'http' && in_array($originHost, ['localhost', '127.0.0.1'], true);
+}
+
+if ($isAllowedLocalOrigin) {
+    header('Access-Control-Allow-Origin: ' . $origin);
+    header('Vary: Origin');
+} else {
+    header('Access-Control-Allow-Origin: *');
+}
+
+header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    if ($isAllowedLocalOrigin) {
+        header('Access-Control-Allow-Origin: ' . $origin);
+        header('Vary: Origin');
+    } else {
+        header('Access-Control-Allow-Origin: *');
+    }
+    header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+    header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
     http_response_code(204);
     exit;
 }
 
 // ── Route Matching ─────────────────────────────────────────
-$path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$path = rtrim(preg_replace('#^/soucul/api#', '', $path), '/');
+$path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
+$apiPos = strpos($path, '/api/');
+if ($apiPos !== false) {
+    $path = substr($path, $apiPos + 4);
+}
+$path = rtrim($path, '/');
+if ($path === '') {
+    $path = '/';
+}
 $method = $_SERVER['REQUEST_METHOD'];
 
 // helper: match pattern like /v1/admin/products/:id

@@ -1,6 +1,23 @@
+Options -MultiViews
 RewriteEngine On
-RewriteBase /soucul/
 
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
+# ✅ ALWAYS send CORS headers (Apache level)
+Header always set Access-Control-Allow-Origin "*"
+Header always set Access-Control-Allow-Methods "GET, POST, PATCH, DELETE, OPTIONS"
+Header always set Access-Control-Allow-Headers "Content-Type, Authorization"
+
+# ✅ Force all API requests through front controller
+# Prevents extensionless URLs from bypassing index.php
+RewriteRule ^api(/.*)?$ index.php [QSA,L]
+
+# ✅ Handle OPTIONS without redirect
+RewriteCond %{REQUEST_METHOD} OPTIONS
 RewriteRule ^(.*)$ index.php [QSA,L]
+
+# ✅ Allow real files/folders
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# ✅ Route everything else
+RewriteRule ^ index.php [QSA,L]

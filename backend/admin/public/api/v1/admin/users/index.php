@@ -23,6 +23,8 @@ $total = (int) $countStmt->fetchColumn();
 
 $stmt = $db->prepare(
     "SELECT u.id,
+            u.first_name,
+            u.last_name,
             CONCAT(u.first_name,' ',u.last_name) AS full_name,
             u.email, u.phone, u.is_active, u.created_at,
             COUNT(o.id) AS total_orders,
