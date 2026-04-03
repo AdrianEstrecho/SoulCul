@@ -2,7 +2,7 @@
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'soucul');
 define('DB_USER', 'soucul_dev');
-define('DB_PASS', 'SouCul@2026');   
+define('DB_PASS', 'SouCul@Dev2026');   
 define('DB_CHARSET', 'utf8mb4');
 
 function getDB(): PDO {
