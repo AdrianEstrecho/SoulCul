@@ -116,26 +116,30 @@
           <div class="stat-card"><div class="label">Low Stock Alert</div><div class="value" id="stat-lowstock">0</div><div class="sub">items need reorder</div><div class="icon-bg"><i class="fa-solid fa-triangle-exclamation"></i></div></div>
         </div>
         <div class="dash-grid">
-          <div class="dash-card">
-            <h3>Products by Category</h3>
-            <div id="cat-breakdown"></div>
+          <div class="dash-card dash-card-fixed">
+            <div class="dash-card-header"><i class="fa-solid fa-chart-pie"></i>Products by Category</div>
+            <div class="dash-card-body" id="cat-breakdown"></div>
           </div>
-          <div class="dash-card">
-            <h3>Orders by Status</h3>
-            <div class="order-status-row" id="order-status-breakdown"></div>
+          <div class="dash-card dash-card-fixed">
+            <div class="dash-card-header"><i class="fa-solid fa-list-check"></i>Orders by Status</div>
+            <div class="dash-card-body" id="order-status-breakdown"></div>
           </div>
-          <div class="dash-card">
-            <h3>Top Selling Products</h3>
-            <div class="table-wrap" style="margin:0"><table><thead><tr><th>#</th><th>Title</th><th>Sold</th></tr></thead><tbody id="top-selling"></tbody></table></div>
+          <div class="dash-card dash-card-fixed">
+            <div class="dash-card-header"><i class="fa-solid fa-trophy"></i>Top Selling Products</div>
+            <div class="dash-card-body">
+              <table class="dash-table"><thead><tr><th>#</th><th>Product</th><th>Sold</th></tr></thead><tbody id="top-selling"></tbody></table>
+            </div>
           </div>
-          <div class="dash-card">
-            <h3>Inventory Alerts</h3>
-            <div class="table-wrap" style="margin:0"><table><thead><tr><th>Product</th><th>Stock</th><th>Status</th></tr></thead><tbody id="inv-alerts"></tbody></table></div>
+          <div class="dash-card dash-card-fixed">
+            <div class="dash-card-header"><i class="fa-solid fa-triangle-exclamation"></i>Inventory Alerts</div>
+            <div class="dash-card-body">
+              <table class="dash-table"><thead><tr><th>Product</th><th>Stock</th><th>Status</th></tr></thead><tbody id="inv-alerts"></tbody></table>
+            </div>
           </div>
         </div>
-        <div class="dash-card" style="margin-top:20px">
-          <h3>Recent Activity</h3>
-          <div id="activity-log"><div style="color:var(--text-muted);font-size:13px">No recent activity</div></div>
+        <div class="dash-card dash-card-fixed" style="margin-top:20px">
+          <div class="dash-card-header"><i class="fa-solid fa-clock-rotate-left"></i>Recent Activity</div>
+          <div class="dash-card-body" id="activity-log"><div style="color:var(--text-muted);font-size:13px">No recent activity</div></div>
         </div>
       </div>
 
@@ -166,6 +170,7 @@
             <tbody id="products-tbody"></tbody>
           </table>
           <div class="table-footer" id="products-footer">Showing 0 products</div>
+          <div class="pagination-bar" id="products-pagination"></div>
         </div>
       </div>
 
@@ -180,6 +185,7 @@
             <tbody id="users-tbody"></tbody>
           </table>
           <div class="table-footer" id="users-footer">Showing 0 users</div>
+          <div class="pagination-bar" id="users-pagination"></div>
         </div>
       </div>
 
@@ -202,6 +208,7 @@
             <tbody id="orders-tbody"></tbody>
           </table>
           <div class="table-footer" id="orders-footer">Showing 0 orders</div>
+          <div class="pagination-bar" id="orders-pagination"></div>
         </div>
       </div>
 
@@ -217,6 +224,7 @@
             <tbody id="vouchers-tbody"></tbody>
           </table>
           <div class="table-footer" id="vouchers-footer">Showing 0 vouchers</div>
+          <div class="pagination-bar" id="vouchers-pagination"></div>
         </div>
       </div>
 
@@ -230,6 +238,7 @@
             <thead><tr><th>Cover</th><th>Name</th><th>Category</th><th>Stock</th><th>Actions</th></tr></thead>
           <tbody id="arch-products-tbody"><tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px">No archived products</td></tr></tbody>
           </table>
+          <div class="pagination-bar" id="arch-products-pagination"></div>
         </div>
       </div>
 
@@ -243,6 +252,7 @@
             <thead><tr><th>Username</th><th>Email</th><th>Role</th><th>Actions</th></tr></thead>
             <tbody id="arch-users-tbody"><tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:24px">No archived users</td></tr></tbody>
           </table>
+          <div class="pagination-bar" id="arch-users-pagination"></div>
         </div>
       </div>
 
@@ -256,6 +266,7 @@
             <thead><tr><th>Order ID</th><th>Customer</th><th>Total</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
             <tbody id="arch-orders-tbody"><tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px">No archived orders</td></tr></tbody>
           </table>
+          <div class="pagination-bar" id="arch-orders-pagination"></div>
         </div>
       </div>
 
@@ -271,6 +282,7 @@
             <tbody id="admins-tbody"></tbody>
           </table>
           <div class="table-footer" id="admins-footer">Showing 0 admins</div>
+          <div class="pagination-bar" id="admins-pagination"></div>
         </div>
       </div>
 
@@ -293,6 +305,7 @@
             <tbody id="audit-tbody"></tbody>
           </table>
           <div class="table-footer" id="audit-footer">Showing 0 logs</div>
+          <div class="pagination-bar" id="audit-pagination"></div>
         </div>
       </div>
 
