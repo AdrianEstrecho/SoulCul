@@ -35,9 +35,6 @@ SouCul/
 
 # 2. Set up backend configuration files
 .\setup-backend.bat
-
-# 3. Clean up root folder (optional)
-.\cleanup-root.bat
 ```
 
 ### Frontend Setup (React + Vite)
@@ -113,4 +110,4 @@ See [BACKEND_GUIDE.md](./guides/BACKEND_GUIDE.md) for detailed database setup in
 
 ## 📝 License
 
-Proprietary - SouCul Team
+Proprietary - SouCul Team / Technological Institute of the Philippines, CCS
