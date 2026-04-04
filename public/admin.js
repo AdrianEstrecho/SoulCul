@@ -49,6 +49,9 @@ const pageSizeState = {
 const PROVINCES = ["Vigan", "Baguio", "Tagaytay", "Bohol", "Boracay"];
 const SUBCATS = ["Clothes", "Handicrafts", "Delicacies", "Decorations", "Homeware"];
 const ORDER_STATUSES = ["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"];
+const ORDER_FILTER_STATUS_MAP = {
+  completed: "delivered",
+};
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -98,6 +101,24 @@ function getStatusBadge(status) {
     cancelled: "badge-cancelled",
   };
   return `<span class="badge ${badgeMap[s] || "badge-inactive"}">${escapeHtml(toTitleCase(s))}</span>`;
+}
+
+function getInventoryStatusBadge(stock) {
+  const quantity = Number(stock || 0);
+
+  if (quantity <= 0) {
+    return '<span class="badge badge-cancelled">Out of Stock</span>';
+  }
+
+  if (quantity <= 3) {
+    return '<span class="badge badge-critical">Critical</span>';
+  }
+
+  if (quantity <= 10) {
+    return '<span class="badge badge-pending">Low Stock</span>';
+  }
+
+  return '<span class="badge badge-active">In Stock</span>';
 }
 
 function resetPaginationPage(key) {
@@ -286,6 +307,51 @@ function showLoginError(msg) {
   setLoginMsg("login-msg", msg, "error");
 }
 
+function setDatabaseStatus(stateLabel, detail = "") {
+  const statusEl = document.getElementById("db-status");
+  const dotEl = document.getElementById("db-dot");
+  const textEl = document.getElementById("db-status-text");
+  if (!statusEl || !dotEl || !textEl) return;
+
+  dotEl.classList.remove("checking", "disconnected");
+  statusEl.classList.remove("disconnected");
+
+  if (stateLabel === "checking") {
+    dotEl.classList.add("checking");
+    textEl.textContent = "Database: Checking...";
+    return;
+  }
+
+  if (stateLabel === "disconnected") {
+    dotEl.classList.add("disconnected");
+    statusEl.classList.add("disconnected");
+    textEl.textContent = detail
+      ? `Database: Disconnected (${detail})`
+      : "Database: Disconnected";
+    return;
+  }
+
+  textEl.textContent = "Database: Connected";
+}
+
+async function refreshDatabaseStatus() {
+  setDatabaseStatus("checking");
+
+  try {
+    const res = await api.getHealth();
+    const connected = !!res?.data?.database?.connected;
+    if (connected) {
+      setDatabaseStatus("connected");
+    } else {
+      setDatabaseStatus("disconnected", res?.data?.database?.error || "Health check failed");
+    }
+    return connected;
+  } catch (err) {
+    setDatabaseStatus("disconnected", err.message || "Request failed");
+    return false;
+  }
+}
+
 async function doLogin() {
   const em = document.getElementById("login-email").value.trim();
   const pw = document.getElementById("login-password").value;
@@ -317,6 +383,7 @@ async function doLogin() {
     }
 
     setLoginMsg("login-msg", "Login successful! Loading dashboard...", "success");
+    await refreshDatabaseStatus();
     showApp();
     await loadSecurity();
     await refreshAll();
@@ -337,6 +404,7 @@ async function doLogout() {
 
   api.logout();
   showLoginScreen();
+  await refreshDatabaseStatus();
   document.getElementById("login-email").value = "";
   document.getElementById("login-password").value = "";
   setLoginMsg("login-msg", "", "");
@@ -472,7 +540,7 @@ async function renderDashboard() {
     const alerts = d.inventory_alerts || [];
     document.getElementById("inv-alerts").innerHTML = alerts.length
       ? alerts
-        .map(a => `<tr><td>${escapeHtml(a.name)}</td><td>${escapeHtml(a.stock)}</td><td>${getStatusBadge(Number(a.stock) === 0 ? "cancelled" : "pending")}</td></tr>`)
+        .map(a => `<tr><td>${escapeHtml(a.name)}</td><td>${escapeHtml(a.stock)}</td><td>${getInventoryStatusBadge(a.stock)}</td></tr>`)
         .join("")
       : '<tr><td colspan="3" style="color:var(--text-muted)">All stock levels healthy</td></tr>';
 
@@ -489,6 +557,82 @@ async function renderDashboard() {
 
 async function loadDashboard() {
   await renderDashboard();
+}
+
+function getImageFileName(src) {
+  if (!src) return "No image selected";
+
+  try {
+    const parsed = new URL(src, window.location.origin);
+    const segment = decodeURIComponent((parsed.pathname || "").split("/").pop() || "");
+    return segment || "Uploaded image";
+  } catch {
+    const segment = decodeURIComponent(String(src).split("?")[0].split("/").pop() || "");
+    return segment || "Uploaded image";
+  }
+}
+
+function updateImagePreviewMeta(src) {
+  const nameEl = document.getElementById("p-image-name");
+  const dimEl = document.getElementById("p-image-dim");
+  if (!nameEl || !dimEl) return;
+
+  if (!src) {
+    nameEl.textContent = "No image selected";
+    dimEl.textContent = "-";
+    return;
+  }
+
+  nameEl.textContent = getImageFileName(src);
+  dimEl.textContent = "Loading dimensions...";
+}
+
+function getAdminAssetBaseUrl() {
+  if (api?.baseURL && String(api.baseURL).trim() !== "") {
+    return String(api.baseURL).replace(/\/+$/, "");
+  }
+
+  if (window.SOUCUL_ADMIN_API_BASE_URL) {
+    return String(window.SOUCUL_ADMIN_API_BASE_URL).replace(/\/+$/, "");
+  }
+
+  return "http://127.0.0.1:8000";
+}
+
+function resolveProductImageUrl(src) {
+  const raw = String(src || "").trim();
+  if (!raw) return "";
+
+  if (/^https?:\/\//i.test(raw) || raw.startsWith("data:") || raw.startsWith("blob:")) {
+    return raw;
+  }
+
+  const base = getAdminAssetBaseUrl();
+  if (raw.startsWith("/")) {
+    return `${base}${raw}`;
+  }
+
+  return `${base}/${raw.replace(/^\/+/, "")}`;
+}
+
+function buildProductCoverCell(imageUrl, productName = "Product") {
+  const resolvedImageUrl = resolveProductImageUrl(imageUrl);
+  const safeName = escapeHtml(productName || "Product");
+
+  if (!resolvedImageUrl) {
+    return `
+      <div class="product-cover" aria-label="No cover image for ${safeName}">
+        <div class="product-cover-fallback"><i class="fa-solid fa-image"></i></div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="product-cover" aria-label="Cover image for ${safeName}">
+      <img class="img-preview" src="${escapeHtml(resolvedImageUrl)}" alt="${safeName}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+      <div class="product-cover-fallback" style="display:none"><i class="fa-solid fa-image"></i></div>
+    </div>
+  `;
 }
 
 function normalizeProduct(p) {
@@ -508,7 +652,7 @@ function normalizeProduct(p) {
     stock: Number(p.stock || 0),
     price,
     discount,
-    image: p.image || "",
+    image: resolveProductImageUrl(p.image || p.featured_image_url || p.featured_image || ""),
   };
 }
 
@@ -538,7 +682,7 @@ async function renderProducts(list) {
     tbody.innerHTML = paged.items.length
       ? paged.items.map(p => `
       <tr>
-        <td>${p.image ? `<img class="img-preview" src="${escapeHtml(p.image)}" onerror="this.style.display='none'" />` : '<div class="img-preview" style="display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text-muted)"><i class="fa-solid fa-bag-shopping"></i></div>'}</td>
+        <td>${buildProductCoverCell(p.image, p.name)}</td>
         <td><div style="font-weight:500">${escapeHtml(p.name)}</div><div style="font-size:12px;color:var(--text-muted)">${escapeHtml(p.brand)}</div></td>
         <td><span class="badge badge-shipped" style="font-size:10px">${escapeHtml(p.category)}</span></td>
         <td><span class="badge badge-user" style="font-size:10px">${escapeHtml(p.subcategory || "-")}</span></td>
@@ -566,8 +710,26 @@ async function loadProducts() {
 }
 
 function setProductImagePreview(src) {
-  document.getElementById("p-image").value = src;
-  document.getElementById("p-image-preview").src = src;
+  const imageField = document.getElementById("p-image");
+  const previewImage = document.getElementById("p-image-preview");
+  if (!imageField || !previewImage) return;
+
+  imageField.value = src;
+  previewImage.src = src;
+  previewImage.alt = `Preview: ${getImageFileName(src)}`;
+
+  updateImagePreviewMeta(src);
+
+  previewImage.onload = () => {
+    const dimEl = document.getElementById("p-image-dim");
+    if (dimEl) dimEl.textContent = `${previewImage.naturalWidth}x${previewImage.naturalHeight}`;
+  };
+
+  previewImage.onerror = () => {
+    const dimEl = document.getElementById("p-image-dim");
+    if (dimEl) dimEl.textContent = "Preview unavailable";
+  };
+
   document.getElementById("img-upload-placeholder").style.display = "none";
   document.getElementById("img-upload-preview").style.display = "flex";
 }
@@ -578,36 +740,60 @@ function clearProductImage() {
   document.getElementById("p-image-preview").src = "";
   document.getElementById("img-upload-placeholder").style.display = "flex";
   document.getElementById("img-upload-preview").style.display = "none";
+  updateImagePreviewMeta("");
 }
 
-function handleImgUpload(input) {
+async function uploadProductImageFile(file) {
+  if (!file || !file.type.startsWith("image/")) {
+    showToast("Please choose a valid image file");
+    return;
+  }
+
+  const productName = String(document.getElementById("p-name")?.value || "").trim();
+  const location = String(document.getElementById("p-category")?.value || "").trim();
+
+  if (!productName || !location) {
+    showToast("Set Product Name and Province before uploading image");
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    showToast("Image must be under 5MB");
+    return;
+  }
+
+  try {
+    const res = await api.uploadProductImage(file, {
+      productName,
+      location,
+    });
+    const imageUrl = res?.data?.url;
+
+    if (!imageUrl) {
+      throw new Error("Upload succeeded but image URL is missing");
+    }
+
+    setProductImagePreview(imageUrl);
+    showToast("Image uploaded. Click Save Product to apply.");
+  } catch (err) {
+    console.error("Image upload error:", err);
+    showToast(err.message || "Failed to upload image");
+  }
+}
+
+async function handleImgUpload(input) {
   const file = input.files[0];
   if (!file) return;
-  if (file.size > 5 * 1024 * 1024) {
-    showToast("Image must be under 5MB");
-    return;
-  }
 
-  const reader = new FileReader();
-  reader.onload = e => setProductImagePreview(e.target.result);
-  reader.readAsDataURL(file);
+  await uploadProductImageFile(file);
 }
 
-function handleImgDrop(event) {
+async function handleImgDrop(event) {
   event.preventDefault();
   document.getElementById("img-upload-area").classList.remove("drag-over");
+
   const file = event.dataTransfer.files[0];
-  if (!file || !file.type.startsWith("image/")) {
-    showToast("Please drop a valid image file");
-    return;
-  }
-  if (file.size > 5 * 1024 * 1024) {
-    showToast("Image must be under 5MB");
-    return;
-  }
-  const reader = new FileReader();
-  reader.onload = e => setProductImagePreview(e.target.result);
-  reader.readAsDataURL(file);
+  await uploadProductImageFile(file);
 }
 
 function updateSubcategoryOptions() {
@@ -851,7 +1037,10 @@ async function renderOrders(list) {
     let data = list;
     if (!data) {
       const params = { limit: 200 };
-      if (orderFilter !== "all") params.status = String(orderFilter).toLowerCase();
+      const normalizedFilter = String(orderFilter || "").toLowerCase();
+      if (normalizedFilter !== "all") {
+        params.status = ORDER_FILTER_STATUS_MAP[normalizedFilter] || normalizedFilter;
+      }
       const res = await api.getOrders(params);
       data = res.data || [];
       state.orders = data;
@@ -1251,7 +1440,7 @@ async function renderArchProducts(list) {
     const paged = paginateRows("arch-products", data);
     const tbody = document.getElementById("arch-products-tbody");
     tbody.innerHTML = paged.items.length
-      ? paged.items.map(p => `<tr><td>${p.image ? `<img class="img-preview" src="${escapeHtml(p.image)}" onerror="this.style.display='none'" />` : '<div class="img-preview" style="display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text-muted)"><i class="fa-solid fa-bag-shopping"></i></div>'}</td><td>${escapeHtml(p.name)}</td><td>${escapeHtml(p.category)}</td><td>${escapeHtml(p.stock)}</td><td><button class="btn btn-sm btn-teal" onclick="restoreProduct('${p.id}')">Restore</button></td></tr>`).join("")
+      ? paged.items.map(p => `<tr><td>${buildProductCoverCell(p.image, p.name)}</td><td>${escapeHtml(p.name)}</td><td>${escapeHtml(p.category)}</td><td>${escapeHtml(p.stock)}</td><td><button class="btn btn-sm btn-teal" onclick="restoreProduct('${p.id}')">Restore</button></td></tr>`).join("")
       : '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px">No archived products</td></tr>';
 
     updateTableFooter("arch-products-footer", "archived products", paged);
@@ -1550,6 +1739,14 @@ document.addEventListener("click", e => {
 });
 
 async function bootstrapAuthenticatedApp() {
+  const isDatabaseConnected = await refreshDatabaseStatus();
+  if (!isDatabaseConnected) {
+    api.logout();
+    showLoginScreen();
+    showLoginError("Backend API is offline. Start PHP server on 127.0.0.1:8000.");
+    return;
+  }
+
   showApp();
   await loadSecurity();
   await refreshAll();
@@ -1558,6 +1755,7 @@ async function bootstrapAuthenticatedApp() {
 document.addEventListener("DOMContentLoaded", async () => {
   setupLoginEvents();
   renderNotifs();
+  await refreshDatabaseStatus();
 
   if (api.isAuthenticated()) {
     try {

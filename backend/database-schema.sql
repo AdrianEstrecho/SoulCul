@@ -161,3 +161,21 @@ CREATE TABLE IF NOT EXISTS payments (
   FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
   INDEX idx_payment_status (payment_status)
 );
+
+-- Audit Logs
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  admin_id INT NOT NULL,
+  action VARCHAR(50) NOT NULL,
+  entity VARCHAR(50) NOT NULL,
+  entity_name VARCHAR(255) NOT NULL,
+  description TEXT NOT NULL,
+  ip_address VARCHAR(45),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE,
+  INDEX idx_admin_id (admin_id),
+  INDEX idx_action (action),
+  INDEX idx_entity (entity),
+  INDEX idx_created_at (created_at)
+);

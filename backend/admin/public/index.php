@@ -56,6 +56,37 @@ if ($path === '') {
 }
 $method = $_SERVER['REQUEST_METHOD'];
 
+// ── STATIC UPLOADS (DEV/ROUTER FALLBACK) ────────────────
+if ($method === 'GET' && str_starts_with($path, '/uploads/products/')) {
+    $uploadsRoot = realpath(__DIR__ . '/uploads/products');
+    $fileName = basename($path);
+
+    if ($uploadsRoot === false || $fileName === '' || $fileName === '.' || $fileName === '..') {
+        http_response_code(404);
+        exit;
+    }
+
+    $candidate = $uploadsRoot . DIRECTORY_SEPARATOR . $fileName;
+    $real = realpath($candidate);
+    $uploadsRootNormalized = rtrim(str_replace('\\', '/', $uploadsRoot), '/');
+    $realNormalized = $real !== false ? str_replace('\\', '/', $real) : '';
+
+    if ($real === false || !is_file($real) || !str_starts_with($realNormalized, $uploadsRootNormalized . '/')) {
+        http_response_code(404);
+        exit;
+    }
+
+    $mime = function_exists('mime_content_type')
+        ? (mime_content_type($real) ?: 'application/octet-stream')
+        : 'application/octet-stream';
+
+    header('Content-Type: ' . $mime);
+    header('Content-Length: ' . (string) filesize($real));
+    header('Cache-Control: public, max-age=86400');
+    readfile($real);
+    exit;
+}
+
 // helper: match pattern like /v1/admin/products/:id
 function matchRoute(string $pattern, string $path): array|false {
     $regex = preg_replace('#:([a-zA-Z_]+)#', '(?P<$1>[^/]+)', $pattern);
@@ -68,7 +99,28 @@ function matchRoute(string $pattern, string $path): array|false {
 
 // ── Health Check ───────────────────────────────────────────
 if ($path === '/health' && $method === 'GET') {
-    success(['status' => 'ok', 'timestamp' => date('c')], 'API is running');
+    $dbConnected = true;
+
+    try {
+        $healthDb = getDB(false);
+        $healthDb->query('SELECT 1');
+    } catch (Throwable) {
+        $dbConnected = false;
+    }
+
+    $status = $dbConnected ? 'ok' : 'degraded';
+    $message = $dbConnected
+        ? 'API and database are running'
+        : 'API is running but database is unavailable';
+
+    success([
+        'status' => $status,
+        'timestamp' => date('c'),
+        'database' => [
+            'connected' => $dbConnected,
+            'error' => $dbConnected ? null : 'Database unavailable',
+        ],
+    ], $message, $dbConnected ? 200 : 503);
 }
 
 // ── AUTH ───────────────────────────────────────────────────
@@ -105,6 +157,12 @@ if ($path === '/v1/admin/products' && $method === 'GET') {
 if ($path === '/v1/admin/products' && $method === 'POST') {
     require __DIR__ . '/api/v1/admin/products/create.php';
 }
+
+// ── UPLOADS ────────────────────────────────────────────────
+if ($path === '/v1/admin/uploads/product-image' && $method === 'POST') {
+    require __DIR__ . '/api/v1/admin/uploads/product_image.php';
+}
+
 if ($m = matchRoute('/v1/admin/products/:id', $path)) {
     if ($method === 'PATCH') { $_route = $m; require __DIR__ . '/api/v1/admin/products/update.php'; }
     if ($method === 'DELETE') { $_route = $m; require __DIR__ . '/api/v1/admin/products/archive.php'; }

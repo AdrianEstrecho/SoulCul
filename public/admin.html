@@ -72,7 +72,7 @@
       <div class="nav-item" onclick="switchPanel('security',this)"><span class="icon"><i class="fa-solid fa-gear"></i></span>Security &amp; Settings</div>
     </nav>
     <div class="sidebar-footer">
-      <div class="db-status"><span class="db-dot"></span>Database: Connected</div>
+      <div class="db-status" id="db-status"><span class="db-dot checking" id="db-dot"></span><span id="db-status-text">Database: Checking...</span></div>
       <button class="btn-logout" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
     </div>
   </aside>
@@ -421,7 +421,11 @@
           <div class="img-upload-hint">Accepted: JPG, PNG, WebP, GIF (Max 5MB)</div>
         </div>
         <div class="img-upload-preview" id="img-upload-preview" style="display:none">
-          <img id="p-image-preview" src="" alt="Preview" />
+          <img id="p-image-preview" src="" alt="Product preview" />
+          <div class="img-upload-meta">
+            <div class="img-upload-name" id="p-image-name">No image selected</div>
+            <div class="img-upload-dim" id="p-image-dim">-</div>
+          </div>
           <button class="img-upload-remove" onclick="event.stopPropagation();clearProductImage()" title="Remove image">
             <i class="fa-solid fa-xmark"></i>
           </button>

@@ -22,9 +22,16 @@ class AdminAPI {
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
     const headers = {
-      'Content-Type': 'application/json',
-      ...options.headers
+      ...(options.headers || {})
     };
+
+    const hasContentTypeHeader = Object.keys(headers)
+      .some(key => key.toLowerCase() === 'content-type');
+    const isFormDataBody = typeof FormData !== 'undefined' && options.body instanceof FormData;
+
+    if (!hasContentTypeHeader && !isFormDataBody) {
+      headers['Content-Type'] = 'application/json';
+    }
 
     if (this.token && !options.skipAuth) {
       headers['Authorization'] = `Bearer ${this.token}`;
@@ -79,6 +86,10 @@ class AdminAPI {
     return await this.request('/api/v1/admin/profile');
   }
 
+  async getHealth() {
+    return await this.request('/health', { skipAuth: true });
+  }
+
   // Dashboard
   async getDashboardStats() {
     return await this.request('/api/v1/admin/dashboard/stats');
@@ -102,6 +113,24 @@ class AdminAPI {
     return await this.request(`/api/v1/admin/products/${productId}`, {
       method: 'PATCH',
       body: JSON.stringify(productData)
+    });
+  }
+
+  async uploadProductImage(file, metadata = {}) {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    if (metadata.productName) {
+      formData.append('product_name', String(metadata.productName));
+    }
+
+    if (metadata.location) {
+      formData.append('location', String(metadata.location));
+    }
+
+    return await this.request('/api/v1/admin/uploads/product-image', {
+      method: 'POST',
+      body: formData
     });
   }
 
@@ -293,4 +322,8 @@ class AdminAPI {
     }
   }
 
+}
+
+if (typeof window !== 'undefined') {
+  window.AdminAPI = AdminAPI;
 }

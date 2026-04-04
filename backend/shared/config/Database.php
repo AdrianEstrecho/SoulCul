@@ -10,7 +10,7 @@ function envValue(string $key, ?string $fallback = null): ?string {
     return $value;
 }
 
-function getDB(): PDO {
+function getDB(bool $haltOnError = true): PDO {
     static $pdo = null;
     if ($pdo !== null) {
         return $pdo;
@@ -53,11 +53,17 @@ function getDB(): PDO {
         }
     }
 
-    http_response_code(500);
-    echo json_encode([
-        'success' => false,
-        'message' => 'Database connection failed',
-        'detail' => $lastError ? $lastError->getMessage() : 'No connection attempts succeeded',
-    ]);
-    exit;
+    $message = $lastError ? $lastError->getMessage() : 'No connection attempts succeeded';
+
+    if ($haltOnError) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Database connection failed',
+            'detail' => $message,
+        ]);
+        exit;
+    }
+
+    throw new PDOException($message);
 }

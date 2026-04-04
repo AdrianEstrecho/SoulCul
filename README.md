@@ -77,6 +77,21 @@ npm run dev
 
 Access at: `http://localhost:5173`
 
+If you are using the admin panel, run the backend API in a second terminal:
+
+```bash
+npm run dev:api
+```
+
+Or run both frontend + backend together:
+
+```bash
+npm run dev:all
+```
+
+The Vite proxy defaults to `http://127.0.0.1:8000`.
+You can override it with `VITE_ADMIN_PROXY_TARGET` in your `.env`.
+
 ### Backend Setup (PHP + MySQL)
 
 ```bash
@@ -84,7 +99,7 @@ cd backend
 composer install
 copy .env.example .env
 # Edit .env with your database credentials
-php -S localhost:8000 -t public
+php -S 127.0.0.1:8000 -t admin/public admin/public/index.php
 ```
 
 Access at: `http://localhost:8000`
