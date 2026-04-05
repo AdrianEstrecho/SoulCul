@@ -8,7 +8,7 @@
 -- Referenced by /api/v1/admin/vouchers/*
 
 CREATE TABLE IF NOT EXISTS vouchers (
-  id                   INT PRIMARY KEY AUTO_INCREMENT,
+  id                   INT AUTO_INCREMENT PRIMARY KEY,
   code                 VARCHAR(50)  NOT NULL UNIQUE,
   discount_type        ENUM('percentage', 'fixed') NOT NULL DEFAULT 'percentage',
   discount_value       DECIMAL(10,2) NOT NULL,
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS vouchers (
 -- Referenced by logAudit() in every endpoint and /api/v1/admin/audit
 
 CREATE TABLE IF NOT EXISTS audit_logs (
-  id           INT PRIMARY KEY AUTO_INCREMENT,
+  id           INT AUTO_INCREMENT PRIMARY KEY,
   admin_id     INT NOT NULL,
   action       VARCHAR(50)  NOT NULL,   -- Create | Update | Delete | Archive | Login | Logout
   entity       VARCHAR(50)  NOT NULL,   -- Product | Order | User | Voucher | Admin | System

@@ -1,6 +1,9 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "./Components/Navbar";
+
+// Get API instance
+const customerAPI = window.customerAPI || {};
 
 // ── Icons ──────────────────────────────────────────────────────────────────
 const Icon = ({ d, size = 20, stroke = 2 }) => (
@@ -733,13 +736,45 @@ export default function Profile({ userProfile, onUpdateProfile, cartCount = 0, i
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [photo, setPhoto] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [saveError, setSaveError] = useState(null);
 
   const user = userProfile;
   const setUser = onUpdateProfile;
   const [draft, setDraft] = useState(user);
 
   const initials = user.name.split(" ").map(n => n[0]).join("");
-  const handleSave = () => { setUser(draft); setEditMode(false); };
+  
+  const handleSave = async () => {
+    setIsLoading(true);
+    setSaveError(null);
+    
+    try {
+      const [firstName, ...lastNameParts] = draft.name.split(" ");
+      const lastName = lastNameParts.join(" ");
+      
+      const updateData = {
+        first_name: firstName,
+        last_name: lastName,
+        phone: draft.phone,
+        birthday: draft.birthday,
+        gender: draft.gender,
+      };
+      
+      const result = await customerAPI.updateProfile(updateData);
+      
+      if (result.success) {
+        setUser(draft);
+        setEditMode(false);
+      } else {
+        setSaveError(result.message || "Failed to save profile. Please try again.");
+      }
+    } catch (error) {
+      setSaveError(error.message || "An error occurred while saving your profile.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const renderSection = () => {
     if (editMode) return (

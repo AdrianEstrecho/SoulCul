@@ -3,6 +3,7 @@
 Complete sequential guide from setup to API deployment. Follow in order.
 
 ## Stack
+
 - **Language:** PHP 8.2+
 - **Database:** MySQL 8.0+
 - **Package Manager:** Composer 2.x
@@ -174,7 +175,7 @@ CREATE TABLE products (
   rating_average DECIMAL(3, 2) DEFAULT 0.00,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  
+
   FOREIGN KEY (location_id) REFERENCES locations(id),
   FOREIGN KEY (category_id) REFERENCES categories(id),
   FOREIGN KEY (admin_id) REFERENCES admins(id),
@@ -188,7 +189,7 @@ CREATE TABLE product_images (
   image_url VARCHAR(500) NOT NULL,
   alt_text VARCHAR(255),
   display_order INT DEFAULT 0,
-  
+
   FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
   INDEX idx_product_id (product_id)
 );
@@ -200,7 +201,7 @@ CREATE TABLE cart_items (
   product_id INT NOT NULL,
   quantity INT NOT NULL DEFAULT 1,
   added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  
+
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
   UNIQUE KEY unique_user_product (user_id, product_id)
@@ -216,16 +217,16 @@ CREATE TABLE orders (
   tax_amount DECIMAL(10, 2) DEFAULT 0,
   shipping_cost DECIMAL(10, 2) DEFAULT 0,
   total_amount DECIMAL(12, 2) NOT NULL,
-  
+
   shipping_address VARCHAR(500) NOT NULL,
   shipping_city VARCHAR(100) NOT NULL,
   shipping_province VARCHAR(100) NOT NULL,
   shipping_phone VARCHAR(20),
-  
+
   customer_notes TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  
+
   FOREIGN KEY (user_id) REFERENCES users(id),
   INDEX idx_user_status (user_id, status)
 );
@@ -239,7 +240,7 @@ CREATE TABLE order_items (
   quantity INT NOT NULL,
   unit_price DECIMAL(10, 2) NOT NULL,
   total_price DECIMAL(12, 2) NOT NULL,
-  
+
   FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
   FOREIGN KEY (product_id) REFERENCES products(id),
   INDEX idx_order_id (order_id)
@@ -255,7 +256,7 @@ CREATE TABLE payments (
   amount DECIMAL(12, 2) NOT NULL,
   processed_at TIMESTAMP NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  
+
   FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
   INDEX idx_payment_status (payment_status)
 );
@@ -294,12 +295,14 @@ node test-db-connection.js
 ```
 
 **What it does:**
+
 - Loads configuration from `.env` file
 - Attempts to connect to the database using configured credentials
 - Lists all tables in the database
 - Displays success/failure status with detailed error messages
 
 **Expected Output:**
+
 ```
 Testing database connection...
 Configuration:
@@ -334,6 +337,7 @@ node diagnose-db.js
 ```
 
 **What it does:**
+
 - Connects using XAMPP default root credentials (no password)
 - Lists all available databases
 - Checks if the `soucul` database exists
@@ -341,12 +345,14 @@ node diagnose-db.js
 - Provides SQL commands to create missing components
 
 **When to use:**
+
 - First-time setup
 - Connection errors with `test-db-connection.js`
 - Verifying XAMPP MySQL is running
 - Checking if database/user creation is needed
 
 **Sample Output (when setup incomplete):**
+
 ```
 Testing connection with XAMPP default root user...
 ✓ Connection with root successful!
@@ -383,12 +389,12 @@ This runs the environment-based connection test.
 
 #### Troubleshooting Connection Issues
 
-| Error | Cause | Solution |
-|-------|-------|----------|
-| `ECONNREFUSED` | MySQL not running | Start XAMPP MySQL service |
-| `ER_ACCESS_DENIED_ERROR` | Wrong credentials | Verify `.env` credentials match database user |
-| `ER_BAD_DB_ERROR` | Database doesn't exist | Run diagnostic script and create database |
-| Port error | Wrong port number | Check XAMPP MySQL port (usually 3306 or 3307) |
+| Error                    | Cause                  | Solution                                      |
+| ------------------------ | ---------------------- | --------------------------------------------- |
+| `ECONNREFUSED`           | MySQL not running      | Start XAMPP MySQL service                     |
+| `ER_ACCESS_DENIED_ERROR` | Wrong credentials      | Verify `.env` credentials match database user |
+| `ER_BAD_DB_ERROR`        | Database doesn't exist | Run diagnostic script and create database     |
+| Port error               | Wrong port number      | Check XAMPP MySQL port (usually 3306 or 3307) |
 
 ### 2.5 Backup & Restore
 
@@ -445,18 +451,18 @@ All endpoints must follow this contract. Both backend developers must review cha
 
 ### 3.3 HTTP Status Codes
 
-| Code | Use Case |
-|------|----------|
-| 200 | Successful read/update |
-| 201 | Resource created |
-| 204 | Deleted (no body) |
-| 400 | Bad request |
-| 401 | Not authenticated |
-| 403 | Not authorized |
-| 404 | Not found |
-| 409 | Conflict (duplicate) |
-| 422 | Validation error |
-| 500 | Server error |
+| Code | Use Case               |
+| ---- | ---------------------- |
+| 200  | Successful read/update |
+| 201  | Resource created       |
+| 204  | Deleted (no body)      |
+| 400  | Bad request            |
+| 401  | Not authenticated      |
+| 403  | Not authorized         |
+| 404  | Not found              |
+| 409  | Conflict (duplicate)   |
+| 422  | Validation error       |
+| 500  | Server error           |
 
 ### 3.4 Authentication
 
@@ -486,29 +492,29 @@ Response meta:
 
 ### 3.6 Customer Endpoints (Public API)
 
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| GET | `/health` | Health check |
-| POST | `/api/v1/customer/auth/register` | Register new customer |
-| POST | `/api/v1/customer/auth/login` | Login customer |
-| GET | `/api/v1/customer/profile` | Get profile (protected) |
-| GET | `/api/v1/customer/cart` | Get cart (protected) |
-| POST | `/api/v1/customer/cart/items` | Add to cart (protected) |
-| POST | `/api/v1/customer/checkout` | Create order (protected) |
-| GET | `/api/v1/customer/orders` | Get orders (protected) |
+| Method | Endpoint                         | Purpose                  |
+| ------ | -------------------------------- | ------------------------ |
+| GET    | `/health`                        | Health check             |
+| POST   | `/api/v1/customer/auth/register` | Register new customer    |
+| POST   | `/api/v1/customer/auth/login`    | Login customer           |
+| GET    | `/api/v1/customer/profile`       | Get profile (protected)  |
+| GET    | `/api/v1/customer/cart`          | Get cart (protected)     |
+| POST   | `/api/v1/customer/cart/items`    | Add to cart (protected)  |
+| POST   | `/api/v1/customer/checkout`      | Create order (protected) |
+| GET    | `/api/v1/customer/orders`        | Get orders (protected)   |
 
 ### 3.7 Admin Endpoints (Admin API)
 
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| POST | `/api/v1/admin/auth/login` | Admin login |
-| GET | `/api/v1/admin/profile` | Get admin profile (protected) |
-| GET | `/api/v1/admin/products` | List products (protected) |
-| POST | `/api/v1/admin/products` | Create product (protected) |
-| PATCH | `/api/v1/admin/products/{id}` | Update product (protected) |
-| PATCH | `/api/v1/admin/products/{id}/inventory` | Update inventory (protected) |
-| GET | `/api/v1/admin/orders` | List orders (protected) |
-| PATCH | `/api/v1/admin/orders/{id}/status` | Update order status (protected) |
+| Method | Endpoint                                | Purpose                         |
+| ------ | --------------------------------------- | ------------------------------- |
+| POST   | `/api/v1/admin/auth/login`              | Admin login                     |
+| GET    | `/api/v1/admin/profile`                 | Get admin profile (protected)   |
+| GET    | `/api/v1/admin/products`                | List products (protected)       |
+| POST   | `/api/v1/admin/products`                | Create product (protected)      |
+| PATCH  | `/api/v1/admin/products/{id}`           | Update product (protected)      |
+| PATCH  | `/api/v1/admin/products/{id}/inventory` | Update inventory (protected)    |
+| GET    | `/api/v1/admin/orders`                  | List orders (protected)         |
+| PATCH  | `/api/v1/admin/orders/{id}/status`      | Update order status (protected) |
 
 ### 3.8 Sample Request & Response
 

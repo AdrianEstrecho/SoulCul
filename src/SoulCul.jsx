@@ -65,18 +65,7 @@ function LoginRequiredModal({ onClose, onGoToLogin }) {
 }
 
 // Seed default account on first load
-(() => {
-  const users = JSON.parse(localStorage.getItem("soulcul_users") || "{}");
-  if (!users["admin"]) {
-    users["admin"] = {
-      firstname: "Admin",
-      lastname: "SoulCul",
-      email: "admin@soulcul.com",
-      password: "Admin@123",
-    };
-    localStorage.setItem("soulcul_users", JSON.stringify(users));
-  }
-})();
+
 
 export default function SoulCul() {
   // Ctrl+Alt+. shortcut to open admin panel
@@ -136,21 +125,27 @@ export default function SoulCul() {
   };
 
   // Add a product to the cart — requires real login (not guest)
-  const handleAddToCart = (product) => {
+  const handleAddToCart = async (product) => {
     if (!isLoggedIn || isGuest) {
       setShowLoginModal(true);
       return;
     }
-    const addQty = product.qty || 1;
-    setCartItems((prev) => {
-      const existing = prev.find((i) => i.id === product.id);
-      if (existing) {
-        return prev.map((i) =>
-          i.id === product.id ? { ...i, qty: i.qty + addQty } : i
-        );
-      }
-      return [...prev, { ...product, cartId: Date.now(), qty: addQty, checked: false }];
-    });
+    try {
+      const api = window.CustomerAPI;
+      await api.addToCart(product.id, product.qty || 1);
+      const addQty = product.qty || 1;
+      setCartItems((prev) => {
+        const existing = prev.find((i) => i.id === product.id);
+        if (existing) {
+          return prev.map((i) =>
+            i.id === product.id ? { ...i, qty: i.qty + addQty } : i
+          );
+        }
+        return [...prev, { ...product, cartId: Date.now(), qty: addQty, checked: false }];
+      });
+    } catch (error) {
+      console.error('Failed to add to cart:', error);
+    }
   };
 
   // Update qty or checked state
@@ -224,9 +219,6 @@ export default function SoulCul() {
         <Route path="/Cart" element={
           !isLoggedIn || isGuest ? <Navigate to="/Login" replace /> :
           <Cart
-            cartItems={cartItems}
-            onUpdateQty={handleUpdateQty}
-            onRemove={handleRemove}
             cartCount={cartCount}
           />
         } />

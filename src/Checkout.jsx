@@ -50,10 +50,30 @@ export default function Checkout({ cartItems, onRemove, cartCount, userProfile, 
 
   const update = (field) => (e) => setForm({ ...form, [field]: e.target.value });
 
-  const handlePlaceOrder = (e) => {
+  
+const handlePlaceOrder = async (e) => {
     e.preventDefault();
-    if (onClearDirectCheckout) onClearDirectCheckout();
-    setPlaced(true);
+    
+    try {
+      const api = window.CustomerAPI;
+      const result = await api.checkout({
+        shipping_address: form.address,
+        shipping_city: form.city,
+        shipping_province: form.province,
+        shipping_phone: form.phone,
+        payment_method: form.paymentMethod
+      });
+
+      if (result.success) {
+        if (onClearDirectCheckout) onClearDirectCheckout();
+        setPlaced(true);
+      } else {
+        alert(result.message || 'Checkout failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      alert('Checkout failed. Please try again.');
+    }
   };
 
   if (items.length === 0) {

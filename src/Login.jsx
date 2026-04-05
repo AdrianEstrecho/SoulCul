@@ -53,36 +53,40 @@ export default function Login({ onLogin, onGuestLogin }) {
   };
 
   // ── Login ──
-  const handleLogin = () => {
+  const handleLogin = async () => {
     const errors = {};
-    if (!loginForm.username.trim()) errors.username = "Username is required.";
+    if (!loginForm.username.trim()) errors.username = "Email is required.";
     if (!loginForm.password) errors.password = "Password is required.";
     setLoginErrors(errors);
     if (Object.keys(errors).length) return;
 
-    const users = JSON.parse(localStorage.getItem("soulcul_users") || "{}");
-    const user = users[loginForm.username.trim()];
-    if (user && user.password === loginForm.password) {
-      localStorage.setItem("soulcul_loggedIn", "true");
-      localStorage.setItem("soulcul_currentUser", loginForm.username.trim());
-      setLoginMsg({ type: "success", text: "Login successful! Redirecting..." });
-      if (onLogin) {
-        onLogin({
-          name: user.firstname + " " + user.lastname,
-          email: user.email,
-          phone: user.phone || "",
-          birthday: user.birthday || "",
-          gender: user.gender || "",
-        });
+    try {
+      setLoginMsg({ type: "info", text: "Logging in..." });
+      const api = window.CustomerAPI;
+      const result = await api.login(loginForm.username.trim(), loginForm.password);
+
+      if (result.success) {
+        setLoginMsg({ type: "success", text: "Login successful! Redirecting..." });
+        if (onLogin) {
+          onLogin({
+            name: (result.data.user?.first_name || '') + " " + (result.data.user?.last_name || ''),
+            email: result.data.user?.email || "",
+            phone: "",
+            birthday: "",
+            gender: "",
+          });
+        }
+        setTimeout(() => navigate("/"), 1200);
+      } else {
+        setLoginMsg({ type: "error", text: result.message || "Login failed." });
       }
-      setTimeout(() => navigate("/"), 1200);
-    } else {
-      setLoginMsg({ type: "error", text: "Incorrect username or password." });
+    } catch (error) {
+      setLoginMsg({ type: "error", text: "Invalid email or password." });
     }
   };
 
   // ── Signup ──
-  const handleSignup = () => {
+  const handleSignup = async () => {
     const { firstName, lastName, email, password, confirm } = signupForm;
     const errors = {};
 
@@ -106,23 +110,20 @@ export default function Login({ onLogin, onGuestLogin }) {
     setSignupErrors(errors);
     if (Object.keys(errors).length) return;
 
-    const username = (firstName + lastName).toLowerCase().replace(/\s/g, "");
-    const users = JSON.parse(localStorage.getItem("soulcul_users") || "{}");
+    try {
+      setSignupMsg({ type: "info", text: "Creating account..." });
+      const api = window.CustomerAPI;
+      const result = await api.register(firstName.trim(), lastName.trim(), email.trim(), password);
 
-    if (users[username]) {
-      setSignupMsg({ type: "error", text: "An account with this name already exists. Please log in." });
-      return;
+      if (result.success) {
+        setSignupMsg({ type: "success", text: "Account created successfully! Redirecting to login..." });
+        setTimeout(() => switchToLogin(), 1600);
+      } else {
+        setSignupMsg({ type: "error", text: result.message || "Registration failed." });
+      }
+    } catch (error) {
+      setSignupMsg({ type: "error", text: "Registration failed. Please try again." });
     }
-    const emailExists = Object.values(users).some((u) => u.email === email);
-    if (emailExists) {
-      setSignupErrors({ ...errors, email: "This email is already registered." });
-      return;
-    }
-
-    users[username] = { firstname: firstName.trim(), lastname: lastName.trim(), email: email.trim(), password };
-    localStorage.setItem("soulcul_users", JSON.stringify(users));
-    setSignupMsg({ type: "success", text: "Account created successfully! Redirecting to login..." });
-    setTimeout(() => switchToLogin(), 1600);
   };
 
   // ── Forgot ──
@@ -153,7 +154,7 @@ export default function Login({ onLogin, onGuestLogin }) {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               </span>
               <input
-                type="text" placeholder="Username"
+                type="email" placeholder="Email Address"
                 className={loginErrors.username ? "auth-error-field" : ""}
                 value={loginForm.username}
                 onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
