@@ -160,6 +160,7 @@ CREATE TABLE IF NOT EXISTS payments (
   
   FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
   INDEX idx_payment_status (payment_status)
+<<<<<<< HEAD
 );
 
 -- Audit Logs
@@ -179,3 +180,6 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   INDEX idx_entity (entity),
   INDEX idx_created_at (created_at)
 );
+=======
+);
+>>>>>>> customer-api
