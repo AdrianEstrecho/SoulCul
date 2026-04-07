@@ -1,5 +1,5 @@
-Options -MultiViews
 RewriteEngine On
+DirectoryIndex index.php
 
 # Hostinger production template (uncomment and replace values)
 SetEnv APP_ENV production

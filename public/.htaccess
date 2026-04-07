@@ -1,5 +1,5 @@
-Options -MultiViews
 RewriteEngine On
+DirectoryIndex index.html
 
 # Keep real files and directories accessible.
 RewriteCond %{REQUEST_FILENAME} -f [OR]
