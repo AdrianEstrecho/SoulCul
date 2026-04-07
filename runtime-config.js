@@ -15,6 +15,21 @@
 
 	const normalizeUrl = (value) => String(value || "").replace(/\/+$/, "");
 
+	const isInvalidPreviewApiUrl = (value, serviceName) => {
+		const normalized = normalizeUrl(value);
+		if (!normalized) {
+			return false;
+		}
+
+		try {
+			const parsed = new URL(normalized);
+			const host = String(parsed.hostname || "").toLowerCase();
+			return /\.hostingersite\.com$/i.test(host) && host.startsWith(`api-${serviceName}.`);
+		} catch {
+			return false;
+		}
+	};
+
 	const inferSubdomainBaseUrl = (serviceName) => {
 		if (!hostname || isLocalHost || isIpHost) {
 			return "";
@@ -33,6 +48,14 @@
 
 	config.adminApiBaseUrl = normalizeUrl(config.adminApiBaseUrl || inferredAdmin);
 	config.customerApiBaseUrl = normalizeUrl(config.customerApiBaseUrl || inferredCustomer);
+
+	if (isHostingerPreviewDomain && isInvalidPreviewApiUrl(config.adminApiBaseUrl, "admin")) {
+		config.adminApiBaseUrl = "";
+	}
+
+	if (isHostingerPreviewDomain && isInvalidPreviewApiUrl(config.customerApiBaseUrl, "customer")) {
+		config.customerApiBaseUrl = "";
+	}
 
 	window.__SOUCUL_CONFIG__ = config;
 })();
