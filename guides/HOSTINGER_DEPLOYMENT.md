@@ -134,3 +134,21 @@ Then test:
 - Keep `backend/admin/public/.htaccess` and `backend/customer/public/.htaccess` deployed.
 - Use SSL URLs in `runtime-config.js`.
 - Do not expose `.env` files in web root.
+
+## 14) Troubleshooting: "Cannot read properties of null (reading 'token')"
+
+If admin login shows this error in production:
+
+1. Hard refresh the page (`Ctrl+F5`) to clear cached scripts.
+2. Confirm `public_html/runtime-config.js` has valid URLs:
+
+```javascript
+window.__SOUCUL_CONFIG__.adminApiBaseUrl = "https://api-admin.yourdomain.com";
+window.__SOUCUL_CONFIG__.customerApiBaseUrl = "https://api-customer.yourdomain.com";
+```
+
+3. Open `https://api-admin.yourdomain.com/health` and verify it returns JSON.
+4. Open browser DevTools Network tab and ensure login calls hit `api-admin` host, not the main frontend host.
+5. Temporarily disable browser extensions (or test in Incognito) if console shows extension script errors (for example `chrome-extension://...`).
+
+This error usually means the frontend expected JSON login data but received HTML or stale JS from cache.

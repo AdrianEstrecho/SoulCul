@@ -376,6 +376,28 @@ function showLoginError(msg) {
   setLoginMsg("login-msg", msg, "error");
 }
 
+function normalizeLoginErrorMessage(err) {
+  const raw = String(err?.message || "").trim();
+  const lowered = raw.toLowerCase();
+
+  if (
+    lowered.includes("reading 'token'") ||
+    lowered.includes('reading "token"') ||
+    lowered.includes("cannot read properties of null")
+  ) {
+    return "Login response was invalid. Hard refresh the page (Ctrl+F5), then verify runtime-config.js adminApiBaseUrl and disable interfering browser extensions.";
+  }
+
+  if (
+    lowered.includes("unexpected response") ||
+    lowered.includes("received html instead of json")
+  ) {
+    return "Admin API URL is misconfigured. Verify runtime-config.js adminApiBaseUrl points to your api-admin host.";
+  }
+
+  return raw || "Login failed.";
+}
+
 function setDatabaseStatus(stateLabel, detail = "") {
   const statusEl = document.getElementById("db-status");
   const dotEl = document.getElementById("db-dot");
@@ -458,7 +480,7 @@ async function doLogin() {
     await refreshAll();
     await refreshNotifs();
   } catch (err) {
-    showLoginError(err.message || "Login failed.");
+    showLoginError(normalizeLoginErrorMessage(err));
   }
 }
 
