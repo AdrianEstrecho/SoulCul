@@ -6,50 +6,60 @@ A full-stack e-commerce platform showcasing Filipino regional products and delic
 
 ```
 SouCul/
-├── src/                       # Frontend React application
-│   ├── Components/           # Reusable React components
-│   │   ├── AboutUs.jsx
-│   │   ├── Categories.jsx
-│   │   ├── Footer.jsx
-│   │   ├── Hero.jsx
-│   │   ├── HomePin.jsx
-│   │   ├── LandingPage.jsx
-│   │   ├── Navbar.jsx
-│   │   └── Products.jsx
-│   ├── StyleSheet/          # Component-specific styles
-│   ├── assets/              # Images and media files
-│   ├── Baguio/              # Region-specific pages
+├── src/                            # React frontend source
+│   ├── Components/                # Reusable UI components
+│   ├── Baguio/                    # Region pages
 │   ├── Bohol/
 │   ├── Boracay/
 │   ├── Tagaytay/
 │   ├── Vigan/
-│   ├── Cart.jsx             # Shopping cart page
-│   ├── Checkout.jsx         # Checkout page
-│   ├── Login.jsx            # Authentication page
-│   ├── ProductPage.jsx      # Product details page
-│   ├── Profile.jsx          # User profile page
-│   ├── SoulCul.jsx          # Main app component
-│   ├── main.jsx             # React entry point
-│   └── index.css            # Global styles
-├── public/                   # Static assets
-│   ├── assets/              # Public images
-│   ├── admin.html           # Admin panel
-│   ├── admin.js             # Admin functionality
-│   └── admin.css            # Admin styles
-├── backend/                  # PHP REST APIs (admin + customer)
-├── scripts/                  # Development utilities
+│   ├── StyleSheet/
+│   ├── assets/
+│   ├── Cart.jsx
+│   ├── Checkout.jsx
+│   ├── Login.jsx
+│   ├── ProductPage.jsx
+│   ├── Profile.jsx
+│   ├── SoulCul.jsx
+│   ├── main.jsx
+│   └── index.css
+├── public/                         # Static assets shipped in frontend build
+│   ├── .htaccess                  # Apache SPA fallback
+│   ├── admin.html                 # Admin panel entry
+│   ├── admin.js                   # Admin app logic
+│   ├── admin-api.js               # Admin API client
+│   ├── admin.css
+│   ├── customer-api.js            # Customer API client
+│   ├── runtime-config.js          # Production runtime API endpoints
+│   └── assets/
+├── backend/                        # PHP APIs and backend services
+│   ├── admin/public/              # Admin API front controller + routes
+│   ├── customer/public/           # Customer API front controller + routes
+│   ├── shared/                    # Shared DB/auth/helpers
+│   ├── storage/
+│   ├── vendor/
+│   ├── database-schema.sql
+│   ├── migration.sql
+│   ├── seed.php
+│   ├── composer.json
+│   └── BACKEND_README.md
+├── guides/
+│   ├── BACKEND_GUIDE.md
+│   └── HOSTINGER_DEPLOYMENT.md
+├── scripts/
 │   ├── test-db-connection.js
 │   ├── diagnose-db.js
 │   ├── run-db-test.bat
 │   ├── setup-backend.bat
 │   └── README.md
-├── guides/                   # Documentation
-│   └── BACKEND_GUIDE.md     # Complete backend setup
-├── index.html               # Frontend entry point
-├── package.json             # Frontend dependencies
-├── eslint.config.js         # ESLint configuration
-├── vite.config.js           # Vite configuration
-└── .env                     # Database configuration
+├── dist/                           # Frontend production build output
+├── index.html
+├── package.json
+├── package-lock.json
+├── vite.config.js
+├── eslint.config.js
+├── .env
+└── .env.example
 ```
 
 **Note:** Frontend stays in root for straightforward static build deployment. Backend has its own folder.
