@@ -15,6 +15,7 @@ const CUSTOMER_API_BASE_URL = (
 
 const CUSTOMER_API_CONFIG_ERROR_MESSAGE =
   'Customer API returned an unexpected response. Check runtime-config.js customerApiBaseUrl and backend routing.';
+const CUSTOMER_SAME_ORIGIN_BASE_URL = String(window.location.origin || '').replace(/\/+$/, '');
 
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 
@@ -49,6 +50,11 @@ class CustomerAPI {
 
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
+    const sameOriginUrl = `${CUSTOMER_SAME_ORIGIN_BASE_URL}${endpoint}`;
+    const canRetrySameOrigin =
+      !!CUSTOMER_SAME_ORIGIN_BASE_URL &&
+      CUSTOMER_SAME_ORIGIN_BASE_URL !== this.baseURL &&
+      (endpoint.startsWith('/api/') || endpoint.startsWith('/health'));
     const headers = {
       'Content-Type': 'application/json',
       ...options.headers
@@ -59,10 +65,29 @@ class CustomerAPI {
     }
 
     try {
-      const response = await fetch(url, {
-        ...options,
-        headers
-      });
+      let response;
+
+      try {
+        response = await fetch(url, {
+          ...options,
+          headers
+        });
+      } catch (primaryError) {
+        const lowered = String(primaryError?.message || '').toLowerCase();
+        const isNetworkFailure =
+          primaryError instanceof TypeError ||
+          lowered.includes('failed to fetch') ||
+          lowered.includes('networkerror');
+
+        if (!canRetrySameOrigin || !isNetworkFailure) {
+          throw primaryError;
+        }
+
+        response = await fetch(sameOriginUrl, {
+          ...options,
+          headers
+        });
+      }
 
       if (response.status === 204) {
         return { success: true, data: null };
