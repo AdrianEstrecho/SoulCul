@@ -152,3 +152,10 @@ window.__SOUCUL_CONFIG__.customerApiBaseUrl = "https://api-customer.yourdomain.c
 5. Temporarily disable browser extensions (or test in Incognito) if console shows extension script errors (for example `chrome-extension://...`).
 
 This error usually means the frontend expected JSON login data but received HTML or stale JS from cache.
+
+If you also see `ERR_CERT_COMMON_NAME_INVALID` for `api-admin.*` on a temporary `*.hostingersite.com` URL:
+
+1. Do not rely on nested preview subdomains for API SSL.
+2. In `public_html/runtime-config.js`, set `adminApiBaseUrl` and `customerApiBaseUrl` to hosts that already have valid SSL certificates.
+3. If only your main domain has valid SSL, deploy backend under that same host and use same-origin API paths.
+4. Long-term fix: connect a custom domain and issue SSL for each API host.

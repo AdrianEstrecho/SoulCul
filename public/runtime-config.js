@@ -11,6 +11,7 @@
 	const protocol = String(window.location.protocol || "https:");
 	const isLocalHost = /^(localhost|127\.0\.0\.1)$/i.test(hostname);
 	const isIpHost = /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname);
+	const isHostingerPreviewDomain = /\.hostingersite\.com$/i.test(hostname);
 
 	const normalizeUrl = (value) => String(value || "").replace(/\/+$/, "");
 
@@ -27,8 +28,11 @@
 		return normalizeUrl(`${protocol}//${expectedPrefix}${hostname}`);
 	};
 
-	config.adminApiBaseUrl = normalizeUrl(config.adminApiBaseUrl || inferSubdomainBaseUrl("admin"));
-	config.customerApiBaseUrl = normalizeUrl(config.customerApiBaseUrl || inferSubdomainBaseUrl("customer"));
+	const inferredAdmin = isHostingerPreviewDomain ? "" : inferSubdomainBaseUrl("admin");
+	const inferredCustomer = isHostingerPreviewDomain ? "" : inferSubdomainBaseUrl("customer");
+
+	config.adminApiBaseUrl = normalizeUrl(config.adminApiBaseUrl || inferredAdmin);
+	config.customerApiBaseUrl = normalizeUrl(config.customerApiBaseUrl || inferredCustomer);
 
 	window.__SOUCUL_CONFIG__ = config;
 })();

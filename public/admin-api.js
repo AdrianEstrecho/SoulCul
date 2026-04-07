@@ -16,6 +16,7 @@ const API_BASE_URL = (
 
 const API_CONFIG_ERROR_MESSAGE =
   'Admin API returned an unexpected response. Check runtime-config.js adminApiBaseUrl and backend routing.';
+const SAME_ORIGIN_BASE_URL = String(window.location.origin || '').replace(/\/+$/, '');
 
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 
@@ -63,6 +64,11 @@ class AdminAPI {
   // Expected success shape from backend: { success: true, data: ... }.
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
+    const sameOriginUrl = `${SAME_ORIGIN_BASE_URL}${endpoint}`;
+    const canRetrySameOrigin =
+      !!SAME_ORIGIN_BASE_URL &&
+      SAME_ORIGIN_BASE_URL !== this.baseURL &&
+      (endpoint.startsWith('/api/') || endpoint.startsWith('/health'));
     const headers = {
       ...(options.headers || {})
     };
@@ -80,10 +86,29 @@ class AdminAPI {
     }
 
     try {
-      const response = await fetch(url, {
-        ...options,
-        headers
-      });
+      let response;
+
+      try {
+        response = await fetch(url, {
+          ...options,
+          headers
+        });
+      } catch (primaryError) {
+        const lowered = String(primaryError?.message || '').toLowerCase();
+        const isNetworkFailure =
+          primaryError instanceof TypeError ||
+          lowered.includes('failed to fetch') ||
+          lowered.includes('networkerror');
+
+        if (!canRetrySameOrigin || !isNetworkFailure) {
+          throw primaryError;
+        }
+
+        response = await fetch(sameOriginUrl, {
+          ...options,
+          headers
+        });
+      }
 
       if (response.status === 204) {
         return { success: true, data: null };

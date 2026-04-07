@@ -395,6 +395,14 @@ function normalizeLoginErrorMessage(err) {
     return "Admin API URL is misconfigured. Verify runtime-config.js adminApiBaseUrl points to your api-admin host.";
   }
 
+  if (
+    lowered.includes("failed to fetch") ||
+    lowered.includes("err_cert_common_name_invalid") ||
+    lowered.includes("certificate")
+  ) {
+    return "Cannot reach Admin API. SSL certificate/domain mismatch detected. Use a valid HTTPS API host in runtime-config.js or serve API from the same domain.";
+  }
+
   return raw || "Login failed.";
 }
 
