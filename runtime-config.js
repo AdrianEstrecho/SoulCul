@@ -2,8 +2,8 @@
 //
 // Edit these values on the server without rebuilding frontend assets.
 // Example for Hostinger subdomains:
-window.__SOUCUL_CONFIG__.adminApiBaseUrl = "https://api-admin.https://paleturquoise-gerbil-565865.hostingersite.com";
-window.__SOUCUL_CONFIG__.customerApiBaseUrl = "https://api-customer.https://paleturquoise-gerbil-565865.hostingersite.com";
+// window.__SOUCUL_CONFIG__.adminApiBaseUrl = "https://api-admin.paleturquoise-gerbil-565865.hostingersite.com";
+// window.__SOUCUL_CONFIG__.customerApiBaseUrl = "https://api-customer.paleturquoise-gerbil-565865.hostingersite.com";
 
 (function initSouculRuntimeConfig() {
 	const config = window.__SOUCUL_CONFIG__ || {};
