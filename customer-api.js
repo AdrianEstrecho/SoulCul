@@ -62,13 +62,31 @@ class CustomerAPI {
         headers
       });
 
-      const data = await response.json();
+      // Read the body as text first so we can handle empty bodies (204, etc.)
+      // and non-JSON error pages without throwing "Unexpected end of JSON input".
+      const rawText = await response.text();
+      let data = null;
 
-      if (!response.ok) {
-        throw new Error(data.message || 'API request failed');
+      if (rawText) {
+        try {
+          data = JSON.parse(rawText);
+        } catch (parseError) {
+          const snippet = rawText.slice(0, 120).replace(/\s+/g, ' ').trim();
+          throw new Error(
+            `Server returned ${response.status} ${response.statusText || ''} with non-JSON body${snippet ? `: ${snippet}` : ''}`
+          );
+        }
       }
 
-      return data;
+      if (!response.ok) {
+        throw new Error(
+          (data && data.message) || `Request failed with status ${response.status}`
+        );
+      }
+
+      // Empty 2xx response (e.g. 204 No Content) — return a minimal success envelope
+      // so callers that read result.success / result.data don't crash.
+      return data ?? { success: true, data: null };
     } catch (error) {
       console.error('API Error:', error);
       throw error;
