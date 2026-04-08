@@ -1,0 +1,24 @@
+name: Sync backend folder to backend branch
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+
+jobs:
+  sync-backend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      - name: Deploy backend folder to backend branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./backend
+          publish_branch: backend
+          force_orphan: false
