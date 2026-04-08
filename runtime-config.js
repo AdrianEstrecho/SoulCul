@@ -6,8 +6,8 @@
 // window.__SOUCUL_CONFIG__.customerApiBaseUrl = "https://api-customer.paleturquoise-gerbil-565865.hostingersite.com";
 //
 // Example for single-domain fallback (no subdomains):
-window.__SOUCUL_CONFIG__.adminApiBaseUrl = "";
-window.__SOUCUL_CONFIG__.customerApiBaseUrl = "";
+// window.__SOUCUL_CONFIG__.adminApiBaseUrl = "";
+// window.__SOUCUL_CONFIG__.customerApiBaseUrl = "";
 
 (function initSouculRuntimeConfig() {
 	const config = window.__SOUCUL_CONFIG__ || {};
