@@ -375,7 +375,15 @@ export default function SoulCul() {
       <Routes>
         <Route path="/"            element={<LandingPage {...cartProps} />} />
         <Route path="/Map"         element={<HomePin {...cartProps} />} />
-        <Route path="/Products"    element={<Navigate to="/Map" replace />} />
+        <Route path="/Products"    element={
+          <ProductPage
+            userProfile={userProfile}
+            onUpdateProfile={setUserProfile}
+            cartCount={cartCount}
+            isLoggedIn={isLoggedIn}
+            onLogout={handleLogout}
+          />
+        } />
         <Route path="/AboutUs"     element={<AboutUs {...cartProps} />} />
 
         {/* Vigan */}

@@ -10,33 +10,16 @@ const PW_RULES = [
   { key: "special", label: "One special character (!@#$%^&*)", test: (v) => /[!@#$%^&*]/.test(v) },
 ];
 
-// ── Default dev login (bypasses backend) ──
-// Remove this before production. Used by the "Quick Login (Dev)" button so
-// the team can jump into logged-in views without needing real credentials.
-const DEFAULT_LOGIN = {
-  email: "dev@soucul.test",
-  password: "Dev1234!",
-};
-
-const DEFAULT_PROFILE = {
-  name: "Dev User",
-  email: DEFAULT_LOGIN.email,
-  phone: "+63 917 000 0000",
-  birthday: "",
-  gender: "",
-  createdAt: new Date().toISOString(),
-};
-
 export default function Login({ onLogin, onGuestLogin }) {
   const navigate = useNavigate();
   const [view, setView] = useState("login"); // "login" | "signup"
   const [showForgot, setShowForgot] = useState(false);
   const [showTos, setShowTos] = useState(false);
 
-  // Login state — pre-filled with default dev credentials
+  // Login state
   const [loginForm, setLoginForm] = useState({
-    username: DEFAULT_LOGIN.email,
-    password: DEFAULT_LOGIN.password,
+    username: "",
+    password: "",
   });
   const [loginErrors, setLoginErrors] = useState({});
   const [loginMsg, setLoginMsg] = useState(null);
@@ -63,13 +46,6 @@ export default function Login({ onLogin, onGuestLogin }) {
     } else {
       navigate("/");
     }
-  };
-
-  // ── Dev shortcut: skip the API and log in as DEFAULT_PROFILE ──
-  const handleDevLogin = () => {
-    setLoginMsg({ type: "success", text: "Dev login — redirecting..." });
-    if (onLogin) onLogin(DEFAULT_PROFILE);
-    setTimeout(() => navigate("/"), 600);
   };
 
   const switchToSignup = () => {
@@ -234,28 +210,6 @@ export default function Login({ onLogin, onGuestLogin }) {
               <button className="auth-btn auth-btn-outline" onClick={switchToSignup}>SIGN UP</button>
               <button className="auth-btn auth-btn-solid" onClick={handleLogin}>LOG IN</button>
             </div>
-
-            {/* Dev shortcut — remove before production */}
-            <button
-              type="button"
-              onClick={handleDevLogin}
-              style={{
-                marginTop: 12,
-                width: "100%",
-                padding: "10px 16px",
-                background: "rgba(255,255,255,0.18)",
-                border: "1.5px dashed rgba(255,255,255,0.55)",
-                borderRadius: 10,
-                color: "#fff",
-                fontSize: 13,
-                fontWeight: 500,
-                letterSpacing: 1,
-                cursor: "pointer",
-                fontFamily: "inherit",
-              }}
-            >
-              ⚡ QUICK LOGIN (DEV)
-            </button>
           </div>
         </div>
       )}

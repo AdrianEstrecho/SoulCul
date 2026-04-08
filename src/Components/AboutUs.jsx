@@ -20,7 +20,7 @@ export default function AboutUs({ cartCount }) {
         <img src={cloud4} alt="" className="landing-cloud landing-cloud-4" />
 
         <div className="about-hero-overlay">
-          <h1 className="about-hero-title">About SoulCul</h1>
+          <h1 className="about-hero-title">About SouCul</h1>
           <p className="about-hero-subtitle">
             Preserving Filipino culture, one souvenir at a time.
           </p>
