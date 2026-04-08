@@ -142,6 +142,10 @@ export default function Login({ onLogin, onGuestLogin }) {
       {/* ── Login Card ── */}
       {view === "login" && (
         <div className="auth-card-wrapper auth-fade-in">
+          <button className="auth-back-btn" onClick={() => navigate(-1)} aria-label="Go back">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+            <span>Back</span>
+          </button>
           <div className="auth-logo">S</div>
           <div className="auth-card">
             <h2 className="auth-title">Welcome</h2>
@@ -195,6 +199,10 @@ export default function Login({ onLogin, onGuestLogin }) {
       {/* ── Signup Card ── */}
       {view === "signup" && (
         <div className="auth-card-wrapper auth-fade-in">
+          <button className="auth-back-btn" onClick={switchToLogin} aria-label="Back to login">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+            <span>Back</span>
+          </button>
           <div className="auth-logo">S</div>
           <div className="auth-card">
             <h2 className="auth-title">Welcome</h2>
