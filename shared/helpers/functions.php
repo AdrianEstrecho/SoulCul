@@ -72,10 +72,16 @@ $jwtExpiry = is_numeric($jwtExpiryRaw) && (int) $jwtExpiryRaw > 0
 
 define('JWT_SECRET', $jwtSecret);
 define('JWT_EXPIRY', $jwtExpiry); // 8 hours by default
+define('CUSTOMER_INACTIVITY_TIMEOUT_SECONDS', 15 * 24 * 60 * 60);
 
 function jwtEncode(array $payload): string {
+    return jwtEncodeWithExpiry($payload, JWT_EXPIRY);
+}
+
+function jwtEncodeWithExpiry(array $payload, int $expirySeconds): string {
     $header  = base64url_encode(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));
-    $payload['exp'] = time() + JWT_EXPIRY;
+    $ttl = max(60, $expirySeconds);
+    $payload['exp'] = time() + $ttl;
     $payload['iat'] = time();
     $claims  = base64url_encode(json_encode($payload));
     $sig     = base64url_encode(hash_hmac('sha256', "$header.$claims", JWT_SECRET, true));

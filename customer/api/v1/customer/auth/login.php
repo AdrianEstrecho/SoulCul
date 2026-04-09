@@ -17,10 +17,10 @@ if (!$user || !password_verify($pass, $user['password_hash'])) {
     error('Invalid email or password', 401);
 }
 
-$token = jwtEncode([
+$token = jwtEncodeWithExpiry([
     'user_id' => $user['id'],
     'email'   => $user['email'],
-]);
+], CUSTOMER_INACTIVITY_TIMEOUT_SECONDS);
 
 createCustomerNotification(
     $db,

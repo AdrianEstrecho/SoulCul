@@ -31,10 +31,10 @@ $stmt->execute([$email, $passwordHash, $firstName, $lastName]);
 $userId = $db->lastInsertId();
 
 // Generate token
-$token = jwtEncode([
+$token = jwtEncodeWithExpiry([
     'user_id' => $userId,
     'email'   => $email,
-]);
+], CUSTOMER_INACTIVITY_TIMEOUT_SECONDS);
 
 createCustomerNotification(
     $db,

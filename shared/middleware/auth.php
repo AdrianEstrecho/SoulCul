@@ -11,6 +11,14 @@ function requireAuth(): array {
     if (!$payload) {
         error('Unauthorized — invalid or expired token', 401);
     }
+
+    if (isset($payload['user_id'])) {
+        $refreshedPayload = $payload;
+        unset($refreshedPayload['exp'], $refreshedPayload['iat']);
+        $refreshedToken = jwtEncodeWithExpiry($refreshedPayload, CUSTOMER_INACTIVITY_TIMEOUT_SECONDS);
+        header('X-Auth-Token: ' . $refreshedToken);
+    }
+
     return $payload; // ['admin_id', 'email', 'role', 'exp', 'iat']
 }
 
