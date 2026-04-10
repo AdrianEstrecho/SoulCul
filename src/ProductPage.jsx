@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "./Components/Navbar";
 
@@ -23,13 +23,8 @@ import damiliImg           from "./assets/damili.png";
 import walletsImg          from "./assets/wallets.png";
 import burnayArtPrintsImg  from "./assets/burnayartprints.png";
 import furnituresImg       from "./assets/furnitures.png";
-import baguioImg           from "./assets/baguio.png";
 import bibingkaImg         from "./assets/bibingka.png";
-import boholImg            from "./assets/bohol.png";
-import boracayImg          from "./assets/boracay.png";
 import shirtImg            from "./assets/Shirt.png";
-import viganImg            from "./assets/vigan.png";
-import tagaytayImg         from "./assets/tagaytay.png";
 
 // ── Data ───────────────────────────────────────────────────────────────────
 const featuredProducts = [
@@ -634,7 +629,6 @@ export default function ProductPage({ cartCount, onAddToCart, onDirectCheckout }
             <h1 className="hero-h1">Explore different</h1>
             <h2 className="hero-h2"><span>Products</span> in philippines</h2>
             <p className="hero-p">The Philippines is rich in diverse cultures, traditions, and languages.</p>
-            <button className="hero-btn">Explore</button>
           </div>
         </div>
 

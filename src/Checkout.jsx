@@ -10,7 +10,7 @@ const formatExpiry = (v) => {
   return d.length > 2 ? d.slice(0, 2) + "/" + d.slice(2) : d;
 };
 
-export default function Checkout({ cartItems, onRemove, cartCount, userProfile, directCheckoutItem, onClearDirectCheckout, onOrderPlaced }) {
+export default function Checkout({ cartItems, cartCount, userProfile, directCheckoutItem, onClearDirectCheckout, onOrderPlaced }) {
   const navigate = useNavigate();
   const isDirectCheckout = !!directCheckoutItem;
   const checkedItems = cartItems.filter((i) => i.checked);

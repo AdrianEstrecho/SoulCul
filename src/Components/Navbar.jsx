@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getCookie } from "../utils/cookieState";
 
@@ -38,19 +38,19 @@ export default function Navbar({ cartCount, onGoHome, hideBackButton }) {
   const isLoggedIn = getCookie("soucul_loggedIn") === "true" || !!getCookie("customer_token");
   const navigate = useNavigate();
   const location = useLocation();
-  const getActiveNav = () => {
+  const getActiveNav = useCallback(() => {
     if (location.pathname === "/") return "Home";
     if (location.pathname === "/Products" || location.pathname === "/ProductPage") return "Products";
     if (location.pathname === "/Map") return null;
     if (location.pathname === "/AboutUs") return "About Us";
     if (location.pathname === "/Profile" || location.pathname === "/Cart" || location.pathname === "/Checkout") return null;
     return null;
-  };
+  }, [location.pathname]);
   const [activeNav, setActiveNav] = useState(getActiveNav);
 
   useEffect(() => {
     setActiveNav(getActiveNav());
-  }, [location.pathname]);
+  }, [getActiveNav]);
   const [scrolled, setScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -73,7 +73,7 @@ export default function Navbar({ cartCount, onGoHome, hideBackButton }) {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const formatNotificationTime = (value) => {
+  const formatNotificationTime = useCallback((value) => {
     if (!value) return "";
 
     const date = new Date(value);
@@ -87,9 +87,9 @@ export default function Navbar({ cartCount, onGoHome, hideBackButton }) {
       hour: "numeric",
       minute: "2-digit",
     });
-  };
+  }, []);
 
-  const loadNotifications = async () => {
+  const loadNotifications = useCallback(async () => {
     if (!isLoggedIn || isGuest) {
       setNotifications([]);
       return;
@@ -119,7 +119,7 @@ export default function Navbar({ cartCount, onGoHome, hideBackButton }) {
     } finally {
       setNotifLoading(false);
     }
-  };
+  }, [isLoggedIn, isGuest, formatNotificationTime]);
 
   const markAsRead = async (id) => {
     const updated = notifications.map((n) => n.id === id ? { ...n, read: true } : n);
@@ -161,7 +161,7 @@ export default function Navbar({ cartCount, onGoHome, hideBackButton }) {
     } else {
       setNotifications([]);
     }
-  }, [isLoggedIn, isGuest]);
+  }, [isLoggedIn, isGuest, loadNotifications]);
 
   // Close notification dropdown on outside click
   useEffect(() => {

@@ -23,7 +23,6 @@ export default function Cart({ cartItems = [], onUpdateQty = () => {}, onRemove 
   const [checkedAll, setCheckedAll] = useState(false);
   const [voucher, setVoucher] = useState("");
 
-  const total = cartItems.reduce((sum, item) => sum + item.price * item.qty, 0);
   const selectedItems = cartItems.filter((i) => i.checked);
   const selectedTotal = selectedItems.reduce((sum, i) => sum + i.price * i.qty, 0);
 

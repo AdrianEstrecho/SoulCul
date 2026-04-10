@@ -92,7 +92,7 @@ export default function Login({ onLogin}) {
       } else {
         setLoginMsg({ type: "error", text: result.message || "Login failed." });
       }
-    } catch (error) {
+    } catch {
       setLoginMsg({ type: "error", text: "Invalid email or password." });
     }
   };
@@ -133,7 +133,7 @@ export default function Login({ onLogin}) {
       } else {
         setSignupMsg({ type: "error", text: result.message || "Registration failed." });
       }
-    } catch (error) {
+    } catch {
       setSignupMsg({ type: "error", text: "Registration failed. Please try again." });
     }
   };
