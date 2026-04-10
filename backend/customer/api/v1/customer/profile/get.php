@@ -10,7 +10,7 @@ if (!$userId) {
 
 $db = getDB();
 
-$stmt = $db->prepare("SELECT id, email, first_name, last_name, phone, birthday, gender, created_at FROM users WHERE id = ? AND is_active = 1");
+$stmt = $db->prepare("SELECT id, email, first_name, last_name, phone, birthday, gender, profile_image_url, created_at FROM users WHERE id = ? AND is_active = 1");
 $stmt->execute([$userId]);
 $user = $stmt->fetch();
 

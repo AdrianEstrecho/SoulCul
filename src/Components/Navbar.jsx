@@ -195,7 +195,7 @@ export default function Navbar({ cartCount, onGoHome, hideBackButton }) {
             onClick={() => {
               setActiveNav(item);
               if (item === "Home") { onGoHome ? onGoHome() : navigate("/"); }
-              if (item === "Products") navigate("/Products");
+              if (item === "Products") navigate("/ProductPage");
               if (item === "About Us") navigate("/AboutUs");
             }}
           >

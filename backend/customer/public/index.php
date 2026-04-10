@@ -32,6 +32,37 @@ if ($path === '') {
 }
 $method = $_SERVER['REQUEST_METHOD'];
 
+// ── STATIC PROFILE UPLOADS (DEV/ROUTER FALLBACK) ────────
+if ($method === 'GET' && str_starts_with($path, '/uploads/profiles/')) {
+    $uploadsRoot = realpath(__DIR__ . '/uploads/profiles');
+    $fileName = basename($path);
+
+    if ($uploadsRoot === false || $fileName === '' || $fileName === '.' || $fileName === '..') {
+        http_response_code(404);
+        exit;
+    }
+
+    $candidate = $uploadsRoot . DIRECTORY_SEPARATOR . $fileName;
+    $real = realpath($candidate);
+    $uploadsRootNormalized = rtrim(str_replace('\\', '/', $uploadsRoot), '/');
+    $realNormalized = $real !== false ? str_replace('\\', '/', $real) : '';
+
+    if ($real === false || !is_file($real) || !str_starts_with($realNormalized, $uploadsRootNormalized . '/')) {
+        http_response_code(404);
+        exit;
+    }
+
+    $mime = function_exists('mime_content_type')
+        ? (mime_content_type($real) ?: 'application/octet-stream')
+        : 'application/octet-stream';
+
+    header('Content-Type: ' . $mime);
+    header('Content-Length: ' . (string) filesize($real));
+    header('Cache-Control: public, max-age=86400');
+    readfile($real);
+    exit;
+}
+
 // helper: match pattern like /v1/customer/products/:id
 function matchRoute(string $pattern, string $path): array|false {
     $regex = preg_replace('#:([a-zA-Z_]+)#', '(?P<$1>[^/]+)', $pattern);
@@ -113,6 +144,12 @@ if ($path === '/v1/customer/profile' && $method === 'GET') {
 if ($path === '/v1/customer/profile' && $method === 'PATCH') {
     require __DIR__ . '/../api/v1/customer/profile/update.php';
 }
+if ($path === '/v1/customer/profile/photo' && $method === 'POST') {
+    require __DIR__ . '/../api/v1/customer/profile/photo.php';
+}
+if ($path === '/v1/customer/profile/password' && $method === 'POST') {
+    require __DIR__ . '/../api/v1/customer/profile/password.php';
+}
 
 // ── AUTH ───────────────────────────────────────────────────
 if ($path === '/v1/customer/auth/register' && $method === 'POST') {
@@ -141,6 +178,43 @@ if ($path === '/v1/customer/notification-settings' && $method === 'GET') {
 }
 if ($path === '/v1/customer/notification-settings' && $method === 'PATCH') {
     require __DIR__ . '/../api/v1/customer/notifications/settings_update.php';
+}
+
+// ── PAYMENT METHODS ────────────────────────────────────────
+if ($path === '/v1/customer/payment-methods' && $method === 'GET') {
+    require __DIR__ . '/../api/v1/customer/payment_methods/index.php';
+}
+if ($path === '/v1/customer/payment-methods' && $method === 'POST') {
+    require __DIR__ . '/../api/v1/customer/payment_methods/create.php';
+}
+if ($m = matchRoute('/v1/customer/payment-methods/:id', $path)) {
+    if ($method === 'PATCH') { $_route = $m; require __DIR__ . '/../api/v1/customer/payment_methods/update.php'; }
+    if ($method === 'DELETE') { $_route = $m; require __DIR__ . '/../api/v1/customer/payment_methods/delete.php'; }
+}
+
+// ── SECURITY ───────────────────────────────────────────────
+if ($path === '/v1/customer/security' && $method === 'GET') {
+    require __DIR__ . '/../api/v1/customer/security/get.php';
+}
+if ($path === '/v1/customer/security' && $method === 'PATCH') {
+    require __DIR__ . '/../api/v1/customer/security/update.php';
+}
+if ($path === '/v1/customer/security/login-activity' && $method === 'GET') {
+    require __DIR__ . '/../api/v1/customer/security/login_activity.php';
+}
+if ($path === '/v1/customer/security/linked-accounts' && $method === 'GET') {
+    require __DIR__ . '/../api/v1/customer/security/linked_accounts.php';
+}
+
+// ── REVIEWS ────────────────────────────────────────────────
+if ($path === '/v1/customer/reviews' && $method === 'GET') {
+    require __DIR__ . '/../api/v1/customer/reviews/index.php';
+}
+if ($path === '/v1/customer/reviews' && $method === 'POST') {
+    require __DIR__ . '/../api/v1/customer/reviews/create.php';
+}
+if ($m = matchRoute('/v1/customer/reviews/:id', $path)) {
+    if ($method === 'DELETE') { $_route = $m; require __DIR__ . '/../api/v1/customer/reviews/delete.php'; }
 }
 
 // ── 404 ────────────────────────────────────────────────────

@@ -56,6 +56,62 @@ ALTER TABLE orders
 ALTER TABLE orders
   ADD INDEX IF NOT EXISTS idx_archived (is_archived);
 
+-- ── 4.1 CUSTOMER PROFILE TABS — payment/security/reviews ───────────────────
+
+CREATE TABLE IF NOT EXISTS customer_payment_methods (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  type VARCHAR(30) NOT NULL,
+  label VARCHAR(120) NOT NULL,
+  details_masked VARCHAR(255) NOT NULL,
+  is_default BOOLEAN NOT NULL DEFAULT false,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_customer_payment_methods_user (user_id),
+  INDEX idx_customer_payment_methods_default (user_id, is_default, is_active)
+);
+
+CREATE TABLE IF NOT EXISTS customer_security_settings (
+  user_id INT PRIMARY KEY,
+  two_factor_enabled BOOLEAN NOT NULL DEFAULT false,
+  two_factor_method ENUM('sms', 'app') NOT NULL DEFAULT 'sms',
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS customer_linked_accounts (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  provider VARCHAR(40) NOT NULL,
+  account_label VARCHAR(120) NOT NULL,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE KEY uniq_customer_linked_provider (user_id, provider),
+  INDEX idx_customer_linked_accounts_user (user_id, is_active)
+);
+
+CREATE TABLE IF NOT EXISTS customer_reviews (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  product_id INT NULL,
+  product_name VARCHAR(255) NOT NULL,
+  rating TINYINT NOT NULL,
+  comment TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL,
+  INDEX idx_customer_reviews_user_created (user_id, created_at),
+  INDEX idx_customer_reviews_product (product_id)
+);
+
 -- ── 4. ADMINS — add username column (frontend uses username) ─────────────────
 -- Your schema only has full_name; the frontend separately tracks username
 

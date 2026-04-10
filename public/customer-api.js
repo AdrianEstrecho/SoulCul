@@ -103,9 +103,16 @@ class CustomerAPI {
       (endpoint.startsWith('/api/') || endpoint.startsWith('/health'));
 
     const headers = {
-      'Content-Type': 'application/json',
-      ...options.headers
+      ...(options.headers || {})
     };
+
+    const hasContentTypeHeader = Object.keys(headers)
+      .some(key => key.toLowerCase() === 'content-type');
+    const isFormDataBody = typeof FormData !== 'undefined' && options.body instanceof FormData;
+
+    if (!hasContentTypeHeader && !isFormDataBody) {
+      headers['Content-Type'] = 'application/json';
+    }
 
     if (this.token && !options.skipAuth && this.isSessionStale()) {
       this.expireSession('inactivity');
@@ -241,6 +248,27 @@ class CustomerAPI {
     });
   }
 
+  async uploadProfilePhoto(file) {
+    const formData = new FormData();
+    formData.append('photo', file);
+
+    return await this.request('/api/v1/customer/profile/photo', {
+      method: 'POST',
+      body: formData
+    });
+  }
+
+  async changePassword(currentPassword, newPassword, confirmPassword) {
+    return await this.request('/api/v1/customer/profile/password', {
+      method: 'POST',
+      body: JSON.stringify({
+        current_password: currentPassword,
+        new_password: newPassword,
+        confirm_password: confirmPassword
+      })
+    });
+  }
+
   // Products
   async getProducts(params = {}) {
     const queryString = new URLSearchParams(params).toString();
@@ -336,6 +364,69 @@ class CustomerAPI {
 
   async deleteAddress(addressId) {
     return await this.request(`/api/v1/customer/addresses/${addressId}`, {
+      method: 'DELETE'
+    });
+  }
+
+  // Payment methods
+  async getPaymentMethods() {
+    return await this.request('/api/v1/customer/payment-methods');
+  }
+
+  async addPaymentMethod(data) {
+    return await this.request('/api/v1/customer/payment-methods', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async updatePaymentMethod(methodId, data) {
+    return await this.request(`/api/v1/customer/payment-methods/${methodId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async deletePaymentMethod(methodId) {
+    return await this.request(`/api/v1/customer/payment-methods/${methodId}`, {
+      method: 'DELETE'
+    });
+  }
+
+  // Security
+  async getSecuritySettings() {
+    return await this.request('/api/v1/customer/security');
+  }
+
+  async updateSecuritySettings(data) {
+    return await this.request('/api/v1/customer/security', {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async getLoginActivity() {
+    return await this.request('/api/v1/customer/security/login-activity');
+  }
+
+  async getLinkedAccounts() {
+    return await this.request('/api/v1/customer/security/linked-accounts');
+  }
+
+  // Reviews
+  async getReviews() {
+    return await this.request('/api/v1/customer/reviews');
+  }
+
+  async createReview(data) {
+    return await this.request('/api/v1/customer/reviews', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async deleteReview(reviewId) {
+    return await this.request(`/api/v1/customer/reviews/${reviewId}`, {
       method: 'DELETE'
     });
   }

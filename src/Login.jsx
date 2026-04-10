@@ -85,6 +85,7 @@ export default function Login({ onLogin, onGuestLogin }) {
             phone: "",
             birthday: "",
             gender: "",
+            profileImage: result.data.user?.profile_image_url || "",
           });
         }
         setTimeout(() => navigate("/"), 1200);

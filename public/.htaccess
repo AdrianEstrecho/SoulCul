@@ -10,6 +10,7 @@ RewriteRule ^api/v1/admin(/.*)?$ backend/admin/public/index.php [QSA,L]
 RewriteRule ^api/v1/customer(/.*)?$ backend/customer/public/index.php [QSA,L]
 RewriteRule ^health$ backend/admin/public/index.php [QSA,L]
 RewriteRule ^uploads/products/.*$ backend/admin/public/index.php [QSA,L]
+RewriteRule ^uploads/profiles/.*$ backend/customer/public/index.php [QSA,L]
 
 # Keep real files and directories accessible.
 RewriteCond %{REQUEST_FILENAME} -f [OR]

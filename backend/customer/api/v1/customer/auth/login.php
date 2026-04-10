@@ -37,5 +37,6 @@ success([
         'email'     => $user['email'],
         'first_name' => $user['first_name'],
         'last_name'  => $user['last_name'],
+        'profile_image_url' => $user['profile_image_url'] ?? null,
     ]
 ], 'Login successful');

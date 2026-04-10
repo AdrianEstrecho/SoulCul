@@ -37,13 +37,13 @@ import BoholHomeware from "./Bohol/Homeware";
 
 import AboutUs from "./Components/AboutUs";
 import Cart from "./Cart";
-import ProductPage from "./ProductPage";
+import ProductPage from "./Components/ProductPage";
 import Checkout from "./Checkout";
 import Profile from "./Profile";
 import Login from "./Login";
 import { getCookie, getJsonCookie, removeCookie, setCookie } from "./utils/cookieState";
 
-const GUEST_PROFILE = { name: "Guest", email: "", phone: "", birthday: "", gender: "", createdAt: "" };
+const GUEST_PROFILE = { name: "Guest", email: "", phone: "", birthday: "", gender: "", profileImage: "", createdAt: "" };
 
 // ── Login Required Modal ──
 function LoginRequiredModal({ onClose, onGoToLogin }) {
@@ -110,6 +110,7 @@ export default function SoulCul() {
         phone: "",
         birthday: "",
         gender: "",
+        profileImage: tokenUser?.profile_image_url || "",
         createdAt: "",
       };
     }
@@ -121,6 +122,7 @@ export default function SoulCul() {
         phone: "",
         birthday: "",
         gender: "",
+        profileImage: "",
         createdAt: "",
       };
     }
@@ -225,6 +227,7 @@ export default function SoulCul() {
             phone: p.phone || "",
             birthday: p.birthday || "",
             gender: p.gender || "",
+            profileImage: resolveImageUrl(p.profile_image_url),
             createdAt: p.created_at || "",
           };
           if (active) setUserProfile(mappedProfile);
@@ -267,6 +270,7 @@ export default function SoulCul() {
       phone: profile.phone || "",
       birthday: profile.birthday || "",
       gender: profile.gender || "",
+      profileImage: profile.profileImage || profile.profile_image_url || "",
       createdAt: profile.createdAt || "",
     });
 

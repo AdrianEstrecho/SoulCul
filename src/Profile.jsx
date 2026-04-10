@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "./Components/Navbar";
 
@@ -90,13 +90,36 @@ function Modal({ title, onClose, children }) {
 function ChangePhotoModal({ currentPhoto, initials, onSave, onClose }) {
   const fileRef = useRef();
   const [preview, setPreview] = useState(currentPhoto);
+  const [selectedFile, setSelectedFile] = useState(null);
   const [dragging, setDragging] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const handleFile = (file) => {
     if (!file || !file.type.startsWith("image/")) return;
+    setSelectedFile(file);
+    setSaveError("");
     const reader = new FileReader();
     reader.onload = e => setPreview(e.target.result);
     reader.readAsDataURL(file);
+  };
+
+  const handleSave = async () => {
+    setSaveError("");
+    setIsSaving(true);
+
+    try {
+      if (!preview && currentPhoto) {
+        await onSave({ remove: true, file: null });
+      } else if (selectedFile) {
+        await onSave({ remove: false, file: selectedFile });
+      }
+      onClose();
+    } catch (error) {
+      setSaveError(error?.message || "Failed to update profile photo.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDrop = (e) => {
@@ -133,13 +156,14 @@ function ChangePhotoModal({ currentPhoto, initials, onSave, onClose }) {
           />
         </div>
         <p className="photo-hint">Supports JPG, PNG, WEBP · Max 5MB</p>
-        {preview && preview !== currentPhoto && (
-          <button className="photo-remove-btn" onClick={() => setPreview(null)}>Remove photo</button>
+        {preview && (
+          <button className="photo-remove-btn" onClick={() => { setPreview(null); setSelectedFile(null); }}>Remove photo</button>
         )}
       </div>
+      {saveError && <div className="auth-msg auth-msg-error" style={{ marginBottom: 12 }}>{saveError}</div>}
       <div className="modal-actions" style={{ marginTop: 16 }}>
-        <button className="btn-cancel" onClick={onClose}>Cancel</button>
-        <button className="btn-save" onClick={() => { onSave(preview); onClose(); }}>Save Photo</button>
+        <button className="btn-cancel" onClick={onClose} disabled={isSaving}>Cancel</button>
+        <button className="btn-save" onClick={handleSave} disabled={isSaving}>{isSaving ? "Saving..." : "Save Photo"}</button>
       </div>
     </Modal>
   );
@@ -160,6 +184,7 @@ function AddPaymentModal({ onSave, onClose }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
 
   const isCard = type === "visa";
   const isPhone = type === "gcash" || type === "maya";
@@ -171,13 +196,25 @@ function AddPaymentModal({ onSave, onClose }) {
     return d.length > 2 ? d.slice(0, 2) + "/" + d.slice(2) : d;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const selected = PAYMENT_TYPES.find(t => t.value === type);
     let meta = "";
     if (isCard) meta = `ending in ${cardNum.replace(/\s/g, "").slice(-4)} · Exp ${expiry}`;
     if (isPhone) meta = phone;
     if (isEmail) meta = email;
-    onSave({ icon: selected.icon, name: selected.label, meta, active: false });
+
+    if (!meta.trim()) {
+      setError("Please complete payment details.");
+      return;
+    }
+
+    setError("");
+    await onSave({
+      type,
+      label: selected.label,
+      details_masked: meta.trim(),
+      is_default: false,
+    });
     onClose();
   };
 
@@ -231,6 +268,7 @@ function AddPaymentModal({ onSave, onClose }) {
           </div>
         )}
 
+        {error && <div className="auth-msg auth-msg-error">{error}</div>}
         <div className="modal-actions">
           <button className="btn-cancel" onClick={onClose}>Cancel</button>
           <button className="btn-save" onClick={handleSubmit}>Add Method</button>
@@ -241,11 +279,13 @@ function AddPaymentModal({ onSave, onClose }) {
 }
 
 // ── Change Password Modal ─────────────────────────────────────────────────
-function ChangePasswordModal({ onClose }) {
+function ChangePasswordModal({ onClose, onSubmit }) {
   const [form, setForm] = useState({ current: "", next: "", confirm: "" });
   const [show, setShow] = useState({ current: false, next: false, confirm: false });
   const [success, setSuccess] = useState(false);
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const validate = () => {
     const e = {};
@@ -255,10 +295,24 @@ function ChangePasswordModal({ onClose }) {
     return e;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
-    setSuccess(true);
+
+    setSubmitError("");
+    setIsSubmitting(true);
+    try {
+      await onSubmit({
+        current: form.current,
+        next: form.next,
+        confirm: form.confirm,
+      });
+      setSuccess(true);
+    } catch (error) {
+      setSubmitError(error?.message || "Failed to update password.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const strength = (() => {
@@ -321,9 +375,10 @@ function ChangePasswordModal({ onClose }) {
             <div className={`pw-tip${/[0-9]/.test(form.next) ? " met" : ""}`}>✓ One number</div>
             <div className={`pw-tip${/[^A-Za-z0-9]/.test(form.next) ? " met" : ""}`}>✓ One special character</div>
           </div>
+          {submitError && <div className="auth-msg auth-msg-error" style={{ marginBottom: 12 }}>{submitError}</div>}
           <div className="modal-actions">
             <button className="btn-cancel" onClick={onClose}>Cancel</button>
-            <button className="btn-save" onClick={handleSubmit}>Update Password</button>
+            <button className="btn-save" onClick={handleSubmit} disabled={isSubmitting}>{isSubmitting ? "Updating..." : "Update Password"}</button>
           </div>
         </>
       )}
@@ -332,11 +387,13 @@ function ChangePasswordModal({ onClose }) {
 }
 
 // ── 2FA Modal ─────────────────────────────────────────────────────────────
-function TwoFAModal({ enabled, onClose }) {
+function TwoFAModal({ enabled, onClose, onComplete }) {
   const [step, setStep] = useState(enabled ? "disable" : "choose");
   const [method, setMethod] = useState("sms");
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [done, setDone] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const inputRefs = useRef([]);
 
   const handleDigit = (i, v) => {
@@ -351,8 +408,22 @@ function TwoFAModal({ enabled, onClose }) {
     if (e.key === "Backspace" && !code[i] && i > 0) inputRefs.current[i - 1]?.focus();
   };
 
-  const verify = () => {
-    if (code.join("").length === 6) setDone(true);
+  const verify = async () => {
+    if (code.join("").length !== 6) return;
+
+    setSubmitError("");
+    setIsSubmitting(true);
+    try {
+      await onComplete({
+        two_factor_enabled: !enabled,
+        two_factor_method: method,
+      });
+      setDone(true);
+    } catch (error) {
+      setSubmitError(error?.message || 'Failed to update 2FA settings.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -379,9 +450,10 @@ function TwoFAModal({ enabled, onClose }) {
                 onChange={e => handleDigit(i, e.target.value)} onKeyDown={e => handleKeyDown(i, e)} />
             ))}
           </div>
+          {submitError && <div className="auth-msg auth-msg-error" style={{ marginBottom: 12 }}>{submitError}</div>}
           <div className="modal-actions">
             <button className="btn-cancel" onClick={onClose}>Keep Enabled</button>
-            <button className="btn-save" style={{ background: "#ef4444" }} onClick={verify}>Disable 2FA</button>
+            <button className="btn-save" style={{ background: "#ef4444" }} onClick={verify} disabled={isSubmitting}>{isSubmitting ? "Updating..." : "Disable 2FA"}</button>
           </div>
         </>
       ) : step === "choose" ? (
@@ -416,9 +488,10 @@ function TwoFAModal({ enabled, onClose }) {
             ))}
           </div>
           <p style={{ fontSize: 12, color: "#aaa", margin: "12px 0 20px", textAlign: "center" }}>Didn't receive it? <span style={{ color: "#2a88b5", cursor: "pointer", fontWeight: 600 }}>Resend</span></p>
+          {submitError && <div className="auth-msg auth-msg-error" style={{ marginBottom: 12 }}>{submitError}</div>}
           <div className="modal-actions">
             <button className="btn-cancel" onClick={() => setStep("choose")}>Back</button>
-            <button className="btn-save" onClick={verify}>Verify & Enable</button>
+            <button className="btn-save" onClick={verify} disabled={isSubmitting}>{isSubmitting ? "Updating..." : "Verify & Enable"}</button>
           </div>
         </>
       )}
@@ -856,39 +929,86 @@ function AddressSection() {
 // ── Payment Section (Enhanced) ─────────────────────────────────────────────
 function PaymentSection() {
   const [methods, setMethods] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [showModal, setShowModal] = useState(false);
 
-  const handleAdd = (method) => {
-    setMethods(m => [...m, { ...method, id: Date.now() }]);
+  const paymentTypeIcon = {
+    visa: "💳",
+    gcash: "📱",
+    maya: "🏦",
+    paypal: "🅿️",
   };
 
-  const handleSetDefault = (id) => {
-    setMethods(m => m.map(x => ({ ...x, active: x.id === id })));
+  const loadPaymentMethods = async () => {
+    setIsLoading(true);
+    setLoadError("");
+
+    try {
+      if (!customerAPI || typeof customerAPI.getPaymentMethods !== "function") {
+        throw new Error("Payment API is unavailable.");
+      }
+
+      const result = await customerAPI.getPaymentMethods();
+      setMethods(Array.isArray(result?.data) ? result.data : []);
+    } catch (error) {
+      setLoadError(error?.message || "Failed to load payment methods.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleRemove = (id) => {
-    setMethods(m => m.filter(x => x.id !== id));
+  useEffect(() => {
+    loadPaymentMethods();
+  }, []);
+
+  const handleAdd = async (method) => {
+    if (!customerAPI || typeof customerAPI.addPaymentMethod !== "function") {
+      throw new Error("Payment API is unavailable.");
+    }
+    await customerAPI.addPaymentMethod(method);
+    await loadPaymentMethods();
+  };
+
+  const handleSetDefault = async (id) => {
+    try {
+      await customerAPI.updatePaymentMethod(id, { is_default: true });
+      await loadPaymentMethods();
+    } catch (error) {
+      setLoadError(error?.message || "Failed to update payment method.");
+    }
+  };
+
+  const handleRemove = async (id) => {
+    try {
+      await customerAPI.deletePaymentMethod(id);
+      await loadPaymentMethods();
+    } catch (error) {
+      setLoadError(error?.message || "Failed to remove payment method.");
+    }
   };
 
   return (
     <div className="section-content">
       <h3 className="section-title">Payment Methods</h3>
-      {methods.length === 0 && (
+      {isLoading && <div style={EMPTY_STATE_STYLE}>Loading payment methods...</div>}
+      {loadError && <div className="auth-msg auth-msg-error" style={{ marginBottom: 12 }}>{loadError}</div>}
+      {!isLoading && !loadError && methods.length === 0 && (
         <div style={EMPTY_STATE_STYLE}>No payment methods yet.</div>
       )}
       <div className="payment-list">
-        {methods.map(({ id, icon, name, meta, active }) => (
-          <div key={id} className={`payment-card${active ? " payment-active" : ""}`}>
-            <div className="payment-icon">{icon}</div>
+        {methods.map(({ id, type, label, details_masked: detailsMasked, is_default: isDefault }) => (
+          <div key={id} className={`payment-card${Number(isDefault) === 1 ? " payment-active" : ""}`}>
+            <div className="payment-icon">{paymentTypeIcon[type] || "💳"}</div>
             <div className="payment-info">
-              <div className="payment-name">{name}</div>
+              <div className="payment-name">{label}</div>
               <div className="payment-meta">
-                {meta}
-                {active && <span className="default-badge" style={{ marginLeft: 6 }}>Default</span>}
+                {detailsMasked}
+                {Number(isDefault) === 1 && <span className="default-badge" style={{ marginLeft: 6 }}>Default</span>}
               </div>
             </div>
             <div className="payment-actions">
-              {!active && (
+              {Number(isDefault) !== 1 && (
                 <button className="addr-btn" onClick={() => handleSetDefault(id)}>Set Default</button>
               )}
               <button className="addr-btn addr-btn-danger" onClick={() => handleRemove(id)}>
@@ -1001,18 +1121,68 @@ function NotificationsSection() {
 function SecuritySection() {
   const [showPassword, setShowPassword] = useState(false);
   const [showTFA, setShowTFA] = useState(false);
-  const [tfaEnabled, setTfaEnabled] = useState(true);
+  const [tfaEnabled, setTfaEnabled] = useState(false);
+  const [tfaMethod, setTfaMethod] = useState("sms");
+  const [linkedAccounts, setLinkedAccounts] = useState([]);
+  const [loginActivity, setLoginActivity] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  const loadSecurityData = async () => {
+    setIsLoading(true);
+    setLoadError("");
+
+    try {
+      const [securityRes, activityRes, linkedRes] = await Promise.all([
+        customerAPI.getSecuritySettings ? customerAPI.getSecuritySettings() : Promise.resolve({ data: {} }),
+        customerAPI.getLoginActivity ? customerAPI.getLoginActivity() : Promise.resolve({ data: [] }),
+        customerAPI.getLinkedAccounts ? customerAPI.getLinkedAccounts() : Promise.resolve({ data: [] }),
+      ]);
+
+      const security = securityRes?.data || {};
+      setTfaEnabled(Boolean(security.two_factor_enabled));
+      setTfaMethod(security.two_factor_method || "sms");
+      setLoginActivity(Array.isArray(activityRes?.data) ? activityRes.data : []);
+      setLinkedAccounts(Array.isArray(linkedRes?.data) ? linkedRes.data : []);
+    } catch (error) {
+      setLoadError(error?.message || "Failed to load security settings.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadSecurityData();
+  }, []);
+
+  const handlePasswordChange = async ({ current, next, confirm }) => {
+    if (!customerAPI || typeof customerAPI.changePassword !== "function") {
+      throw new Error("Password API is unavailable.");
+    }
+
+    await customerAPI.changePassword(current, next, confirm);
+  };
+
+  const handleTwoFactorUpdate = async ({ two_factor_enabled, two_factor_method }) => {
+    if (!customerAPI || typeof customerAPI.updateSecuritySettings !== "function") {
+      throw new Error("Security settings API is unavailable.");
+    }
+
+    await customerAPI.updateSecuritySettings({ two_factor_enabled, two_factor_method });
+    setTfaEnabled(Boolean(two_factor_enabled));
+    setTfaMethod(two_factor_method || "sms");
+  };
 
   const items = [
     {
       label: "Change Password",
-      desc: "Last changed 3 months ago",
+      desc: "Update your account password",
       icon: "🔒",
       action: () => setShowPassword(true),
     },
     {
       label: "Two-Factor Authentication",
-      desc: tfaEnabled ? "Enabled via SMS" : "Not enabled",
+      desc: tfaEnabled ? `Enabled via ${tfaMethod === "app" ? "Authenticator App" : "SMS"}` : "Not enabled",
       icon: "📲",
       action: () => setShowTFA(true),
       badge: tfaEnabled ? "ON" : "OFF",
@@ -1020,13 +1190,15 @@ function SecuritySection() {
     },
     {
       label: "Login Activity",
-      desc: "View recent sessions",
+      desc: `${loginActivity.length} recent sign-in${loginActivity.length === 1 ? '' : 's'}`,
       icon: "🖥️",
       action: () => {},
     },
     {
       label: "Linked Accounts",
-      desc: "Google, Facebook",
+      desc: linkedAccounts.length > 0
+        ? linkedAccounts.map((a) => a.provider).join(", ")
+        : "No linked accounts",
       icon: "🔗",
       action: () => {},
     },
@@ -1035,6 +1207,8 @@ function SecuritySection() {
   return (
     <div className="section-content">
       <h3 className="section-title">Security</h3>
+      {isLoading && <div style={EMPTY_STATE_STYLE}>Loading security settings...</div>}
+      {loadError && <div className="auth-msg auth-msg-error" style={{ marginBottom: 12 }}>{loadError}</div>}
       <div className="security-list">
         {items.map(({ label, desc, icon, action, badge, badgeActive }) => (
           <div key={label} className="security-row" onClick={action}>
@@ -1052,16 +1226,36 @@ function SecuritySection() {
         ))}
       </div>
 
+      <div style={{ marginTop: 18 }}>
+        <div className="section-title" style={{ fontSize: 16, marginBottom: 10 }}>Recent Login Activity</div>
+        {loginActivity.length === 0 && <div style={EMPTY_STATE_STYLE}>No recent login activity.</div>}
+        <div className="orders-list">
+          {loginActivity.slice(0, 5).map((entry) => (
+            <div key={entry.id} className="order-card">
+              <div className="order-emoji">🔐</div>
+              <div className="order-info">
+                <div className="order-id">{entry.title || 'Login detected'}</div>
+                <div className="order-meta">{safeDateLabel(entry.created_at)}</div>
+              </div>
+              <div className="order-right">
+                <div className="order-total" style={{ fontSize: 12, color: '#6a7a8a' }}>{entry.message || 'Successful sign in'}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {showPassword && (
-        <ChangePasswordModal onClose={() => setShowPassword(false)} />
+        <ChangePasswordModal
+          onClose={() => setShowPassword(false)}
+          onSubmit={handlePasswordChange}
+        />
       )}
       {showTFA && (
         <TwoFAModal
           enabled={tfaEnabled}
-          onClose={() => {
-            setTfaEnabled(e => !e);
-            setShowTFA(false);
-          }}
+          onComplete={handleTwoFactorUpdate}
+          onClose={() => setShowTFA(false)}
         />
       )}
     </div>
@@ -1069,23 +1263,133 @@ function SecuritySection() {
 }
 
 function ReviewsSection() {
-  const reviews = [];
+  const [reviews, setReviews] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [showAdd, setShowAdd] = useState(false);
+  const [draft, setDraft] = useState({ product_name: "", rating: 5, comment: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const loadReviews = async () => {
+    setIsLoading(true);
+    setLoadError("");
+    try {
+      if (!customerAPI || typeof customerAPI.getReviews !== "function") {
+        throw new Error("Reviews API is unavailable.");
+      }
+      const result = await customerAPI.getReviews();
+      setReviews(Array.isArray(result?.data) ? result.data : []);
+    } catch (error) {
+      setLoadError(error?.message || "Failed to load reviews.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadReviews();
+  }, []);
+
+  const addReview = async () => {
+    if (!draft.product_name.trim() || !draft.comment.trim()) {
+      setLoadError("Product name and comment are required.");
+      return;
+    }
+
+    setLoadError("");
+    setIsSubmitting(true);
+    try {
+      await customerAPI.createReview({
+        product_name: draft.product_name.trim(),
+        rating: Number(draft.rating),
+        comment: draft.comment.trim(),
+      });
+      setDraft({ product_name: "", rating: 5, comment: "" });
+      setShowAdd(false);
+      await loadReviews();
+    } catch (error) {
+      setLoadError(error?.message || "Failed to add review.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const removeReview = async (id) => {
+    try {
+      await customerAPI.deleteReview(id);
+      await loadReviews();
+    } catch (error) {
+      setLoadError(error?.message || "Failed to remove review.");
+    }
+  };
 
   return (
     <div className="section-content">
       <h3 className="section-title">My Reviews</h3>
-      {reviews.length === 0 && (
+      <div style={{ marginBottom: 14 }}>
+        <button className="edit-btn" onClick={() => setShowAdd((v) => !v)}>
+          <Icon d={icons.plus} size={14} />
+          {showAdd ? "Cancel" : "Add Review"}
+        </button>
+      </div>
+
+      {showAdd && (
+        <div className="review-card" style={{ marginBottom: 14 }}>
+          <div className="form-group" style={{ marginBottom: 10 }}>
+            <label className="form-label">Product Name</label>
+            <input
+              className="form-input"
+              value={draft.product_name}
+              onChange={(e) => setDraft((d) => ({ ...d, product_name: e.target.value }))}
+            />
+          </div>
+          <div className="form-group" style={{ marginBottom: 10 }}>
+            <label className="form-label">Rating</label>
+            <select
+              className="form-input"
+              value={draft.rating}
+              onChange={(e) => setDraft((d) => ({ ...d, rating: Number(e.target.value) }))}
+            >
+              <option value={5}>5 - Excellent</option>
+              <option value={4}>4 - Very Good</option>
+              <option value={3}>3 - Good</option>
+              <option value={2}>2 - Fair</option>
+              <option value={1}>1 - Poor</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Comment</label>
+            <textarea
+              className="form-input"
+              rows={4}
+              value={draft.comment}
+              onChange={(e) => setDraft((d) => ({ ...d, comment: e.target.value }))}
+            />
+          </div>
+          <div className="modal-actions" style={{ marginTop: 12 }}>
+            <button className="btn-cancel" onClick={() => setShowAdd(false)} disabled={isSubmitting}>Cancel</button>
+            <button className="btn-save" onClick={addReview} disabled={isSubmitting}>{isSubmitting ? "Saving..." : "Save Review"}</button>
+          </div>
+        </div>
+      )}
+
+      {isLoading && <div style={EMPTY_STATE_STYLE}>Loading reviews...</div>}
+      {loadError && <div className="auth-msg auth-msg-error" style={{ marginBottom: 12 }}>{loadError}</div>}
+      {!isLoading && !loadError && reviews.length === 0 && (
         <div style={EMPTY_STATE_STYLE}>No reviews yet.</div>
       )}
       <div className="reviews-list">
-        {reviews.map((r, i) => (
-          <div key={i} className="review-card">
+        {reviews.map((r) => (
+          <div key={r.id} className="review-card">
             <div className="review-header">
-              <div className="review-product">{r.product}</div>
-              <div className="review-date">{r.date}</div>
+              <div className="review-product">{r.product_name}</div>
+              <div className="review-date">{safeDateLabel(r.created_at)}</div>
             </div>
-            <div className="review-stars">{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</div>
+            <div className="review-stars">{"★".repeat(Number(r.rating || 0))}{"☆".repeat(5 - Number(r.rating || 0))}</div>
             <div className="review-comment">{r.comment}</div>
+            <div style={{ marginTop: 10 }}>
+              <button className="addr-btn addr-btn-danger" onClick={() => removeReview(r.id)}>Remove</button>
+            </div>
           </div>
         ))}
       </div>
@@ -1105,13 +1409,13 @@ const NAV_ITEMS = [
 ];
 
 // ── Main ───────────────────────────────────────────────────────────────────
-export default function Profile({ userProfile, onUpdateProfile, cartCount = 0, isLoggedIn, onLogout }) {
+export default function Profile({ userProfile, onUpdateProfile, cartCount = 0, onLogout }) {
   const navigate = useNavigate();
   const [active, setActive] = useState("profile");
   const [editMode, setEditMode] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [photo, setPhoto] = useState(null);
+  const [photo, setPhoto] = useState(userProfile?.profileImage || userProfile?.profile_image_url || null);
   const [isLoading, setIsLoading] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [profileStats, setProfileStats] = useState({
@@ -1121,7 +1425,10 @@ export default function Profile({ userProfile, onUpdateProfile, cartCount = 0, i
     totalSpent: 0,
   });
 
-  const user = userProfile || { name: "Customer", email: "", phone: "", birthday: "", gender: "", createdAt: "" };
+  const user = useMemo(
+    () => userProfile || { name: "Customer", email: "", phone: "", birthday: "", gender: "", profileImage: "", createdAt: "" },
+    [userProfile]
+  );
   const setUser = onUpdateProfile;
   const [draft, setDraft] = useState(user);
 
@@ -1130,25 +1437,31 @@ export default function Profile({ userProfile, onUpdateProfile, cartCount = 0, i
   }, [user]);
 
   useEffect(() => {
+    setPhoto(user.profileImage || user.profile_image_url || null);
+  }, [user]);
+
+  useEffect(() => {
     let mounted = true;
 
     const loadStats = async () => {
       try {
-        const [ordersRes, wishlistRes] = await Promise.all([
+        const [ordersRes, wishlistRes, reviewsRes] = await Promise.all([
           customerAPI.getOrders ? customerAPI.getOrders() : Promise.resolve({ data: [] }),
           customerAPI.getWishlist ? customerAPI.getWishlist() : Promise.resolve({ data: [] }),
+          customerAPI.getReviews ? customerAPI.getReviews() : Promise.resolve({ data: [] }),
         ]);
 
         if (!mounted) return;
 
         const orders = Array.isArray(ordersRes?.data) ? ordersRes.data : [];
         const wishlist = Array.isArray(wishlistRes?.data) ? wishlistRes.data : [];
+        const reviews = Array.isArray(reviewsRes?.data) ? reviewsRes.data : [];
         const totalSpent = orders.reduce((sum, order) => sum + Number(order.total_amount || 0), 0);
 
         setProfileStats({
           totalOrders: orders.length,
           wishlistItems: wishlist.length,
-          reviewsGiven: 0,
+          reviewsGiven: reviews.length,
           totalSpent,
         });
       } catch {
@@ -1196,6 +1509,7 @@ export default function Profile({ userProfile, onUpdateProfile, cartCount = 0, i
           phone: p.phone || "",
           birthday: p.birthday || "",
           gender: p.gender || "",
+          profileImage: p.profile_image_url || user.profileImage || "",
           createdAt: p.created_at || user.createdAt || "",
         });
         setEditMode(false);
@@ -1206,6 +1520,36 @@ export default function Profile({ userProfile, onUpdateProfile, cartCount = 0, i
       setSaveError(error.message || "An error occurred while saving your profile.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handlePhotoSave = async ({ file, remove }) => {
+    if (!customerAPI || typeof customerAPI.updateProfile !== "function") {
+      throw new Error("Profile API is unavailable.");
+    }
+
+    let imageUrl = null;
+
+    if (!remove && file) {
+      if (!customerAPI.uploadProfilePhoto || typeof customerAPI.uploadProfilePhoto !== "function") {
+        throw new Error("Photo upload API is unavailable.");
+      }
+
+      const uploadResult = await customerAPI.uploadProfilePhoto(file);
+      imageUrl = uploadResult?.data?.profile_image_url || null;
+    }
+
+    if (remove) {
+      const result = await customerAPI.updateProfile({ profile_image_url: "" });
+      const nextUrl = result?.data?.profile_image_url || "";
+      setPhoto(nextUrl || null);
+      setUser({ ...user, profileImage: nextUrl || "" });
+      return;
+    }
+
+    if (imageUrl) {
+      setPhoto(imageUrl);
+      setUser({ ...user, profileImage: imageUrl });
     }
   };
 
@@ -1596,7 +1940,7 @@ export default function Profile({ userProfile, onUpdateProfile, cartCount = 0, i
         <ChangePhotoModal
           currentPhoto={photo}
           initials={initials}
-          onSave={setPhoto}
+          onSave={handlePhotoSave}
           onClose={() => setShowPhotoModal(false)}
         />
       )}

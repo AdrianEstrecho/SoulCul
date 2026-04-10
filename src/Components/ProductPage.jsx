@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import Navbar from "./Components/Navbar";
+import Navbar from "./Navbar";
 
 // ── Asset Imports ──────────────────────────────────────────────────────────
 import cloud1 from "./assets/2 1.png";
