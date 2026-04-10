@@ -29,16 +29,16 @@ export default function AboutUs({ cartCount }) {
 
       {/* What is SoulCul */}
       <section className="about-section">
-        <h2 className="about-section-title">What is SoulCul?</h2>
+        <h2 className="about-section-title">What is SouCul?</h2>
         <div className="about-section-body">
           <p>
-            <strong>SoulCul</strong> — short for <em>Soul</em> and <em>Culture</em> — is an
+            <strong>SouCul</strong> — short for <em>Sou</em> and <em>Culture</em> — is an
             online souvenir marketplace that celebrates the heart and heritage of the
             Philippines. We connect travelers, culture enthusiasts, and gift seekers with
             authentic, locally handcrafted products from iconic Filipino destinations.
           </p>
           <p>
-            Every item you find on SoulCul tells a story. From the hand-woven baskets of
+            Every item you find on SouCul tells a story. From the hand-woven baskets of
             Vigan to the strawberry preserves of Baguio, each product carries the soul of
             its maker and the culture of the land it comes from. Our platform is built on
             the belief that souvenirs should be more than trinkets — they should be lasting
@@ -60,7 +60,7 @@ export default function AboutUs({ cartCount }) {
                 locally crafted souvenirs were being overshadowed by mass-produced
                 imports. They saw artisans with incredible talent but limited reach,
                 and travelers who wanted authentic keepsakes but didn't know where to
-                find them. The idea for SoulCul was born — a platform that could bridge
+                find them. The idea for SouCul was born — a platform that could bridge
                 that gap.
               </p>
             </div>
@@ -73,7 +73,7 @@ export default function AboutUs({ cartCount }) {
                 The founding team spent a year researching, traveling, and partnering with
                 artisan communities across the Philippines. They visited Vigan, Baguio,
                 Tagaytay, Boracay, and Bohol — curating products, documenting stories, and
-                building the relationships that form the backbone of SoulCul. The platform
+                building the relationships that form the backbone of SouCul. The platform
                 was developed with a focus on showcasing regional identity through five
                 product categories: Handicrafts, Clothes, Decorations, Homeware, and
                 Delicacies.
@@ -85,9 +85,9 @@ export default function AboutUs({ cartCount }) {
             <div>
               <h3>Going Live</h3>
               <p>
-                SoulCul officially launched, offering curated collections from five iconic
+                SouCul officially launched, offering curated collections from five iconic
                 Philippine destinations. With a growing catalog of products and a passionate
-                community, SoulCul continues to expand — adding new regions, new artisans,
+                community, SouCul continues to expand — adding new regions, new artisans,
                 and new ways to experience Filipino culture from anywhere in the world.
               </p>
             </div>
@@ -104,7 +104,7 @@ export default function AboutUs({ cartCount }) {
             <p className="about-card-text">
               To empower Filipino artisan communities by providing a digital marketplace
               that amplifies their craft, preserves cultural heritage, and connects them
-              with a global audience. Every purchase on SoulCul directly supports the
+              with a global audience. Every purchase on SouCul directly supports the
               livelihoods of local makers and their families.
             </p>
           </div>
@@ -113,7 +113,7 @@ export default function AboutUs({ cartCount }) {
             <p className="about-card-text">
               A world where Filipino culture thrives through commerce — where every souvenir
               purchased is a vote of support for authenticity, craftsmanship, and the
-              communities that keep traditions alive. We envision SoulCul as the go-to
+              communities that keep traditions alive. We envision SouCul as the go-to
               destination for anyone who wants to bring a piece of the Philippines home.
             </p>
           </div>
@@ -122,16 +122,16 @@ export default function AboutUs({ cartCount }) {
 
       {/* The People Behind SoulCul */}
       <section className="about-section about-section-alt">
-        <h2 className="about-section-title">The People Behind SoulCul</h2>
+        <h2 className="about-section-title">The People Behind SouCul</h2>
         <p className="about-section-intro">
-          SoulCul is powered by a passionate team of students, developers, and culture
+          SouCul is powered by a passionate team of students, developers, and culture
           advocates united by a shared love for Filipino heritage.
         </p>
         <div className="about-people-grid">
           {[
             {
               role: "Founder & Project Lead",
-              desc: "Drives the vision and strategic direction of SoulCul, ensuring every decision stays rooted in cultural authenticity and community impact.",
+              desc: "Drives the vision and strategic direction of SouCul, ensuring every decision stays rooted in cultural authenticity and community impact.",
             },
             {
               role: "Lead Developer",
@@ -147,7 +147,7 @@ export default function AboutUs({ cartCount }) {
             },
             {
               role: "Content & Marketing",
-              desc: "Tells the stories behind every product and destination — through photography, copywriting, and social media — to bring the SoulCul experience to life online.",
+              desc: "Tells the stories behind every product and destination — through photography, copywriting, and social media — to bring the SouCul experience to life online.",
             },
             {
               role: "Quality Assurance",
@@ -197,7 +197,7 @@ export default function AboutUs({ cartCount }) {
 
       {/* Why Choose SoulCul */}
       <section className="about-section about-section-alt">
-        <h2 className="about-section-title">Why Choose SoulCul?</h2>
+        <h2 className="about-section-title">Why Choose SouCul?</h2>
         <div className="about-section-body">
           <ul className="about-reasons-list">
             <li>
