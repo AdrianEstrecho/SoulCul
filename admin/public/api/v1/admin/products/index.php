@@ -41,7 +41,7 @@ $total = (int) $countStmt->fetchColumn();
 $stmt = $db->prepare(
     "SELECT p.id, p.name, p.slug, p.sku, p.description, p.price, p.discount_price,
             p.quantity_in_stock AS stock, p.featured_image_url AS image,
-            p.is_active, p.rating_average, p.created_at,
+            p.is_featured AS featured, p.is_active, p.rating_average, p.created_at,
             l.name AS category, c.name AS subcategory
      FROM products p
      JOIN locations l ON p.location_id = l.id

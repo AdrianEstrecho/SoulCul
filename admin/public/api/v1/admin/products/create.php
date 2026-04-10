@@ -21,12 +21,13 @@ $slug = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $body['name'])) . '-' . 
 
 // Map frontend status
 $isActive = !isset($body['status']) || $body['status'] === 'Active' ? 1 : 0;
+$isFeatured = filter_var($body['featured'] ?? false, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
 
 $stmt = $db->prepare(
     "INSERT INTO products
         (name, slug, description, sku, location_id, category_id, admin_id,
-         price, discount_price, quantity_in_stock, featured_image_url, is_active)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+         price, discount_price, quantity_in_stock, featured_image_url, is_featured, is_active)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 );
 $stmt->execute([
     trim($body['name']),
@@ -42,6 +43,7 @@ $stmt->execute([
         : null,
     (int) ($body['stock'] ?? 0),
     $body['image'] ?? null,
+    $isFeatured,
     $isActive,
 ]);
 

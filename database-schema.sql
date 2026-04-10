@@ -74,6 +74,7 @@ CREATE TABLE IF NOT EXISTS products (
   discount_price DECIMAL(10, 2),
   quantity_in_stock INT NOT NULL DEFAULT 0,
   featured_image_url VARCHAR(500),
+  is_featured BOOLEAN DEFAULT false,
   is_active BOOLEAN DEFAULT true,
   rating_average DECIMAL(3, 2) DEFAULT 0.00,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

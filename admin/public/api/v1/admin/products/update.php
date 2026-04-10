@@ -72,6 +72,7 @@ $map = [
     'price'       => 'price',
     'stock'       => 'quantity_in_stock',
     'image'       => 'featured_image_url',
+    'featured'    => 'is_featured',
 ];
 
 foreach ($map as $key => $col) {
@@ -79,6 +80,8 @@ foreach ($map as $key => $col) {
         $fields[] = "$col = ?";
         if ($key === 'image') {
             $params[] = $incomingImage;
+        } elseif ($key === 'featured') {
+            $params[] = filter_var($body[$key], FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
         } else {
             $params[] = $body[$key];
         }

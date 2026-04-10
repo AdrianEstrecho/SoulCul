@@ -8,6 +8,8 @@ $db = getDB();
 
 $locationSlug = $_GET['location'] ?? null;
 $categorySlug = $_GET['category'] ?? null;
+$featuredOnly = isset($_GET['featured'])
+    && in_array(strtolower((string) $_GET['featured']), ['1', 'true', 'yes'], true);
 $page = (int)($_GET['page'] ?? 1);
 $perPage = (int)($_GET['per_page'] ?? 20);
 $offset = ($page - 1) * $perPage;
@@ -26,16 +28,21 @@ if ($categorySlug) {
     $params[] = $categorySlug;
 }
 
+if ($featuredOnly) {
+    $where[] = "p.is_featured = 1";
+}
+
 $whereClause = implode(' AND ', $where);
 
 $stmt = $db->prepare("
     SELECT p.id, p.name, p.slug, p.description, p.price, 
-           p.discount_price, p.featured_image_url, p.quantity_in_stock,
+           p.discount_price, p.featured_image_url, p.quantity_in_stock, p.is_featured,
            l.name as location_name, c.name as category_name
     FROM products p
     JOIN locations l ON p.location_id = l.id
     JOIN categories c ON p.category_id = c.id
     WHERE $whereClause
+    ORDER BY p.is_featured DESC, p.created_at DESC, p.id DESC
     LIMIT ? OFFSET ?
 ");
 

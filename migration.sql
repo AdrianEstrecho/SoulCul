@@ -56,6 +56,32 @@ ALTER TABLE orders
 ALTER TABLE orders
   ADD INDEX IF NOT EXISTS idx_archived (is_archived);
 
+-- ── 3.1 PRODUCTS — add featured flag for homepage highlights ───────────────
+
+ALTER TABLE products
+  ADD COLUMN IF NOT EXISTS is_featured TINYINT(1) NOT NULL DEFAULT 0
+  AFTER featured_image_url;
+
+ALTER TABLE products
+  ADD INDEX IF NOT EXISTS idx_products_featured_active (is_featured, is_active);
+
+-- Seed a starter featured set only when none is currently marked featured.
+UPDATE products p
+JOIN (
+  SELECT id
+  FROM products
+  WHERE is_active = 1
+  ORDER BY created_at DESC, id DESC
+  LIMIT 7
+) picks ON p.id = picks.id
+JOIN (
+  SELECT COUNT(*) AS featured_count
+  FROM products
+  WHERE is_featured = 1
+) summary ON 1 = 1
+SET p.is_featured = 1
+WHERE summary.featured_count = 0;
+
 -- ── 4.1 CUSTOMER PROFILE TABS — payment/security/reviews ───────────────────
 
 CREATE TABLE IF NOT EXISTS customer_payment_methods (
