@@ -56,6 +56,20 @@ ALTER TABLE orders
 ALTER TABLE orders
   ADD INDEX IF NOT EXISTS idx_archived (is_archived);
 
+ALTER TABLE orders
+  MODIFY COLUMN status ENUM(
+    'cash_on_delivery_approved',
+    'online_payment_processed',
+    'waiting_for_courier',
+    'shipped',
+    'to_be_delivered',
+    'delivered',
+    'cancelled',
+    'pending',
+    'confirmed',
+    'processing'
+  ) NOT NULL DEFAULT 'cash_on_delivery_approved';
+
 -- ── 3.1 PRODUCTS — add featured flag for homepage highlights ───────────────
 
 ALTER TABLE products
@@ -64,6 +78,14 @@ ALTER TABLE products
 
 ALTER TABLE products
   ADD INDEX IF NOT EXISTS idx_products_featured_active (is_featured, is_active);
+
+ALTER TABLE products
+  ADD COLUMN IF NOT EXISTS material VARCHAR(120) NOT NULL DEFAULT 'Locally sourced'
+  AFTER description;
+
+UPDATE products
+SET material = 'Locally sourced'
+WHERE material IS NULL OR TRIM(material) = '';
 
 -- Seed a starter featured set only when none is currently marked featured.
 UPDATE products p

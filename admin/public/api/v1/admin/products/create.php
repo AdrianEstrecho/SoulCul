@@ -22,17 +22,22 @@ $slug = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $body['name'])) . '-' . 
 // Map frontend status
 $isActive = !isset($body['status']) || $body['status'] === 'Active' ? 1 : 0;
 $isFeatured = filter_var($body['featured'] ?? false, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
+$material = trim((string) ($body['material'] ?? $body['brand'] ?? ''));
+if ($material === '') {
+    $material = 'Locally sourced';
+}
 
 $stmt = $db->prepare(
     "INSERT INTO products
-        (name, slug, description, sku, location_id, category_id, admin_id,
+        (name, slug, description, material, sku, location_id, category_id, admin_id,
          price, discount_price, quantity_in_stock, featured_image_url, is_featured, is_active)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 );
 $stmt->execute([
     trim($body['name']),
     $slug,
     trim($body['description']),
+    $material,
     $body['sku'] ?? null,
     $location['id'],
     $category['id'],

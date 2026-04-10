@@ -21,7 +21,18 @@ $stats['total_orders'] = (int) $db->query(
 )->fetchColumn();
 
 $stats['pending_orders'] = (int) $db->query(
-    "SELECT COUNT(*) FROM orders WHERE status = 'pending'"
+        "SELECT COUNT(*)
+         FROM orders
+         WHERE status IN (
+             'cash_on_delivery_approved',
+             'online_payment_processed',
+             'waiting_for_courier',
+             'shipped',
+             'to_be_delivered',
+             'pending',
+             'confirmed',
+             'processing'
+         )"
 )->fetchColumn();
 
 // Revenue (delivered orders)

@@ -65,6 +65,12 @@ if (array_key_exists('image', $body)) {
 $fields = [];
 $params = [];
 
+if (array_key_exists('material', $body) || array_key_exists('brand', $body)) {
+    $fields[] = 'material = ?';
+    $material = trim((string) ($body['material'] ?? $body['brand'] ?? ''));
+    $params[] = $material !== '' ? $material : 'Locally sourced';
+}
+
 $map = [
     'name'        => 'name',
     'description' => 'description',
