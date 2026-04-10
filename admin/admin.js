@@ -86,6 +86,66 @@ function toTitleCase(value) {
     .replace(/\b\w/g, c => c.toUpperCase());
 }
 
+function resolveOrderPaymentMethod(rawMethod, rawStatus) {
+  const method = String(rawMethod || "").toLowerCase();
+  if (method) return method;
+
+  const status = String(rawStatus || "").toLowerCase();
+  if (status.includes("cash_on_delivery")) return "cod";
+  if (status.includes("online_payment")) return "online";
+  return "";
+}
+
+function formatOrderPaymentMethodLabel(value) {
+  const method = String(value || "").toLowerCase();
+  if (!method) return "Not specified";
+
+  const map = {
+    gcash: "GCash",
+    credit_card: "Card",
+    debit_card: "Card",
+    card: "Card",
+    bank_transfer: "Bank Transfer",
+    bank: "Bank Transfer",
+    paypal: "PayPal",
+    cod: "Cash On Delivery",
+    online: "Online Payment",
+  };
+
+  return map[method] || toTitleCase(method);
+}
+
+function getOrderPaymentStatusLabel({ paymentMethod, paymentStatus, orderStatus }) {
+  const method = String(paymentMethod || "").toLowerCase();
+  const status = String(paymentStatus || "").toLowerCase();
+  const order = String(orderStatus || "").toLowerCase();
+
+  if (method === "cod" || order.includes("cash_on_delivery")) {
+    return "To be paid";
+  }
+
+  if (status === "failed" || status === "refunded") {
+    return toTitleCase(status);
+  }
+
+  if (method || order.includes("online_payment")) {
+    return "Paid";
+  }
+
+  return status ? toTitleCase(status) : "Not specified";
+}
+
+function getOrderPaymentStatusBadge(label) {
+  const normalized = String(label || "").toLowerCase();
+  let badgeClass = "badge-inactive";
+
+  if (normalized === "paid") badgeClass = "badge-completed";
+  else if (normalized === "to be paid") badgeClass = "badge-pending";
+  else if (normalized === "failed" || normalized === "refunded") badgeClass = "badge-cancelled";
+
+  return `<span class="badge ${badgeClass}">${escapeHtml(label || "Not specified")}</span>`;
+}
+
 function toCurrency(value) {
   const n = Number(value || 0);
   return `₱${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
@@ -1189,6 +1249,13 @@ async function renderOrders(list) {
     tbody.innerHTML = paged.items.length
       ? paged.items.map(o => {
         const status = String(o.status || "").toLowerCase();
+        const resolvedPaymentMethod = resolveOrderPaymentMethod(o.payment_method, status);
+        const paymentMethodLabel = formatOrderPaymentMethodLabel(resolvedPaymentMethod);
+        const paymentStatusLabel = getOrderPaymentStatusLabel({
+          paymentMethod: resolvedPaymentMethod,
+          paymentStatus: o.payment_status,
+          orderStatus: status,
+        });
         const statusesForSelect = ORDER_STATUSES.includes(status)
           ? ORDER_STATUSES
           : [status, ...ORDER_STATUSES];
@@ -1203,6 +1270,10 @@ async function renderOrders(list) {
                 ${statusesForSelect.map(s => `<option value="${s}" ${status === s ? "selected" : ""}>${toTitleCase(s)}</option>`).join("")}
               </select>
               ${getConfirmPill(o)}
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px">
+              <span class="badge badge-user">${escapeHtml(paymentMethodLabel)}</span>
+              ${getOrderPaymentStatusBadge(paymentStatusLabel)}
             </div>
           </td>
           <td>${escapeHtml(o.created_at || "")}</td>
@@ -1236,12 +1307,22 @@ async function viewOrder(id) {
     const res = await api.getOrderDetails(id);
     const o = res.data;
     state.currentOrderId = id;
+    const payment = o.payment || {};
+    const resolvedPaymentMethod = resolveOrderPaymentMethod(payment.payment_method, o.status);
+    const paymentMethodLabel = formatOrderPaymentMethodLabel(resolvedPaymentMethod);
+    const paymentStatusLabel = getOrderPaymentStatusLabel({
+      paymentMethod: resolvedPaymentMethod,
+      paymentStatus: payment.payment_status,
+      orderStatus: o.status,
+    });
 
     document.getElementById("od-name").textContent = censorName(o.customer);
     document.getElementById("od-email").textContent = censorEmail(o.email);
     document.getElementById("od-phone").textContent = censorPhone(o.user_phone || o.shipping_phone || o.phone);
     document.getElementById("od-id").textContent = o.order_number || o.id;
     document.getElementById("od-status").innerHTML = `${getStatusBadge(o.status)} ${getConfirmPill(o)}`;
+    document.getElementById("od-payment-method").textContent = paymentMethodLabel;
+    document.getElementById("od-payment-status").innerHTML = getOrderPaymentStatusBadge(paymentStatusLabel);
     document.getElementById("od-total").textContent = toCurrency(o.total_amount || 0);
     document.getElementById("od-date").textContent = o.created_at || "";
 
