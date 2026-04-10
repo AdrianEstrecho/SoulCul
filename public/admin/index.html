@@ -192,10 +192,12 @@
         </div>
         <div class="filter-bar">
           <button class="filter-btn active" onclick="filterOrders('all',this)">All</button>
-          <button class="filter-btn" onclick="filterOrders('Pending',this)">Pending</button>
-          <button class="filter-btn" onclick="filterOrders('Processing',this)">Processing</button>
+          <button class="filter-btn" onclick="filterOrders('cash_on_delivery_approved',this)">COD Approved</button>
+          <button class="filter-btn" onclick="filterOrders('online_payment_processed',this)">Online Payment Processed</button>
+          <button class="filter-btn" onclick="filterOrders('waiting_for_courier',this)">Waiting for Courier</button>
           <button class="filter-btn" onclick="filterOrders('Shipped',this)">Shipped</button>
-          <button class="filter-btn" onclick="filterOrders('Completed',this)">Completed</button>
+          <button class="filter-btn" onclick="filterOrders('to_be_delivered',this)">To Be Delivered</button>
+          <button class="filter-btn" onclick="filterOrders('Completed',this)">Delivered</button>
           <button class="filter-btn" onclick="filterOrders('Cancelled',this)">Cancelled</button>
         </div>
         <div class="table-wrap">
@@ -370,7 +372,7 @@
     <input type="hidden" id="edit-product-id" />
     <div class="form-row">
       <div class="form-group"><label>Product Name *</label><input id="p-name" /></div>
-      <div class="form-group"><label>Brand / Maker</label><input id="p-brand" /></div>
+      <div class="form-group"><label>Material / Maker</label><input id="p-brand" /></div>
     </div>
     <div class="form-group"><label>Description *</label><textarea id="p-desc"></textarea></div>
     <div class="form-row">

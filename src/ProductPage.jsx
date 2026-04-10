@@ -38,6 +38,9 @@ function mapProduct(row) {
     location: row.location_name || "SouCul",
     price: Number(row.discount_price ?? row.price ?? 0),
     imageUrl: resolveImageUrl(row.featured_image_url),
+    description: row.description || "",
+    stock: Math.max(0, Number(row.quantity_in_stock ?? 0)),
+    rating: Number(row.rating_average ?? 0),
     category: row.category_name || "Uncategorized",
     isFeatured: Boolean(Number(row.is_featured ?? 0)),
   };
@@ -70,26 +73,117 @@ const TruckIcon = () => (
   </svg>
 );
 
-const ppProductDetails = {
-  default: {
-    description: "A beautifully crafted item from the rich cultural heritage of the Philippines, made with traditional techniques passed down through generations.",
-    rating: 4.8, reviews: 124, deliveryTime: "3–5 business days",
-    material: "Locally sourced", seller: "Philippine Heritage Crafts", stock: 12,
-    tags: ["Handmade", "Cultural", "Authentic"],
-  },
+const PP_PRODUCT_DETAILS_FALLBACK = {
+  description: "A beautifully crafted item from the rich cultural heritage of the Philippines, made with traditional techniques passed down through generations.",
+  rating: 0,
+  reviews: 0,
+  deliveryTime: "3–5 business days",
+  material: "Locally sourced",
+  seller: "Local Artisan Seller",
+  stock: 0,
+  tags: ["Handmade", "Authentic"],
 };
+
+function mapProductDetails(row, baseProduct) {
+  const ratingRaw = Number(row.rating_average ?? row.rating ?? baseProduct.rating ?? PP_PRODUCT_DETAILS_FALLBACK.rating);
+  const rating = Number.isFinite(ratingRaw) ? Math.max(0, Math.min(5, ratingRaw)) : PP_PRODUCT_DETAILS_FALLBACK.rating;
+
+  const reviewsRaw = Number(row.review_count ?? row.reviews ?? PP_PRODUCT_DETAILS_FALLBACK.reviews);
+  const reviews = Number.isFinite(reviewsRaw) ? Math.max(0, Math.floor(reviewsRaw)) : PP_PRODUCT_DETAILS_FALLBACK.reviews;
+
+  const stockRaw = Number(row.quantity_in_stock ?? row.stock ?? baseProduct.stock ?? PP_PRODUCT_DETAILS_FALLBACK.stock);
+  const stock = Number.isFinite(stockRaw) ? Math.max(0, Math.floor(stockRaw)) : PP_PRODUCT_DETAILS_FALLBACK.stock;
+
+  const location = row.location || row.location_name || baseProduct.location || "Philippines";
+  const category = row.category || row.category_name || baseProduct.category || "Product";
+  const tags = Array.from(new Set([category, location, "Authentic"]))
+    .filter(Boolean)
+    .slice(0, 3);
+
+  return {
+    description: row.description || baseProduct.description || PP_PRODUCT_DETAILS_FALLBACK.description,
+    rating,
+    reviews,
+    deliveryTime: row.delivery_time || PP_PRODUCT_DETAILS_FALLBACK.deliveryTime,
+    material: row.material || PP_PRODUCT_DETAILS_FALLBACK.material,
+    seller: row.seller_name || row.seller || PP_PRODUCT_DETAILS_FALLBACK.seller,
+    stock,
+    tags: tags.length ? tags : PP_PRODUCT_DETAILS_FALLBACK.tags,
+  };
+}
 
 // ── Product Modal ─────────────────────────────────────────────────────────
 function PPProductModal({ product, onClose, onAddToCart, onCheckoutProduct }) {
   const [added, setAdded] = useState(false);
   const [qty, setQty] = useState(1);
-  const details = ppProductDetails.default;
+  const [details, setDetails] = useState(() => mapProductDetails({}, product));
+  const [loadingDetails, setLoadingDetails] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    setAdded(false);
+    setQty(1);
+    setDetails(mapProductDetails({}, product));
+
+    const loadProductDetails = async () => {
+      setLoadingDetails(true);
+
+      try {
+        const api = window.CustomerAPI || window.customerAPI;
+        if (!api || typeof api.getProduct !== "function") {
+          throw new Error("Customer API client is unavailable.");
+        }
+
+        const response = await api.getProduct(product.id);
+        const row = response?.data && typeof response.data === "object" ? response.data : {};
+
+        if (!isMounted) return;
+        setDetails(mapProductDetails(row, product));
+      } catch (error) {
+        console.error("Failed to load product details:", error);
+        if (!isMounted) return;
+        setDetails(mapProductDetails({}, product));
+      } finally {
+        if (isMounted) {
+          setLoadingDetails(false);
+        }
+      }
+    };
+
+    loadProductDetails();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [product]);
+
+  const stockCount = Math.max(0, Number(details.stock) || 0);
+  const isOutOfStock = stockCount <= 0;
+  const ratingValue = Number.isFinite(Number(details.rating)) ? Number(details.rating) : 0;
+
+  useEffect(() => {
+    setQty((prevQty) => {
+      if (stockCount <= 0) return 0;
+      const minQty = 1;
+      const normalized = Math.max(minQty, Number(prevQty) || minQty);
+      return Math.min(normalized, stockCount);
+    });
+  }, [stockCount]);
+
   const price = `₱${product.price.toLocaleString()}`;
-  const totalPrice = `₱${(product.price * qty).toLocaleString()}`;
+  const totalPrice = `₱${(product.price * Math.max(0, qty)).toLocaleString()}`;
 
   const handleAdd = () => {
+    if (isOutOfStock || qty < 1) return;
     onAddToCart({ ...product, qty });
     setAdded(true);
+  };
+
+  const handleCheckout = () => {
+    if (isOutOfStock || qty < 1) return;
+    onClose();
+    onCheckoutProduct({ ...product, qty });
   };
 
   return (
@@ -116,15 +210,15 @@ function PPProductModal({ product, onClose, onAddToCart, onCheckoutProduct }) {
             <div className="modal-rating">
               <div className="modal-stars">
                 {[1,2,3,4,5].map((s) => (
-                  <span key={s} className={s <= Math.round(details.rating) ? "star-filled" : "star-empty"}>
-                    <StarIcon filled={s <= Math.round(details.rating)} />
+                  <span key={s} className={s <= Math.round(ratingValue) ? "star-filled" : "star-empty"}>
+                    <StarIcon filled={s <= Math.round(ratingValue)} />
                   </span>
                 ))}
               </div>
-              <span className="modal-rating-score">{details.rating}</span>
+              <span className="modal-rating-score">{ratingValue.toFixed(1)}</span>
               <span className="modal-review-count">({details.reviews} reviews)</span>
             </div>
-            <p className="modal-description">{details.description}</p>
+            <p className="modal-description">{loadingDetails ? "Loading product details..." : details.description}</p>
             <div className="modal-info-grid">
               <div className="modal-info-item">
                 <span className="modal-info-label">Seller</span>
@@ -136,7 +230,7 @@ function PPProductModal({ product, onClose, onAddToCart, onCheckoutProduct }) {
               </div>
               <div className="modal-info-item">
                 <span className="modal-info-label">Stock</span>
-                <span className="modal-info-value">{details.stock} left</span>
+                <span className="modal-info-value">{isOutOfStock ? "Out of stock" : `${stockCount} left`}</span>
               </div>
               <div className="modal-info-item">
                 <span className="modal-info-label">Origin</span>
@@ -150,9 +244,9 @@ function PPProductModal({ product, onClose, onAddToCart, onCheckoutProduct }) {
             <div className="modal-qty-row">
               <span className="modal-qty-label">Quantity</span>
               <div className="modal-qty-controls">
-                <button type="button" className="modal-qty-btn" onClick={() => setQty(q => Math.max(1, q - 1))}>−</button>
+                <button type="button" className="modal-qty-btn" disabled={isOutOfStock || qty <= 1} onClick={() => setQty(q => Math.max(1, q - 1))}>−</button>
                 <span className="modal-qty-value">{qty}</span>
-                <button type="button" className="modal-qty-btn" onClick={() => setQty(q => Math.min(details.stock, q + 1))}>+</button>
+                <button type="button" className="modal-qty-btn" disabled={isOutOfStock || qty >= stockCount} onClick={() => setQty(q => Math.min(stockCount, q + 1))}>+</button>
               </div>
             </div>
             <div className="modal-footer">
@@ -164,17 +258,17 @@ function PPProductModal({ product, onClose, onAddToCart, onCheckoutProduct }) {
                 {added ? (
                   <>
                     <span className="modal-added-confirm">Added to cart!</span>
-                    <button className="modal-checkout-btn" onClick={() => { onClose(); onCheckoutProduct({ ...product, qty }); }}>
+                    <button className="modal-checkout-btn" disabled={isOutOfStock || qty < 1} onClick={handleCheckout}>
                       <span>Checkout</span>
                     </button>
                   </>
                 ) : (
                   <>
-                    <button className="modal-add-btn" onClick={handleAdd}>
+                    <button className="modal-add-btn" disabled={isOutOfStock || qty < 1} onClick={handleAdd}>
                       <CartIcon size={16} color="#fff" />
-                      <span>Add to Cart</span>
+                      <span>{isOutOfStock ? "Out of Stock" : "Add to Cart"}</span>
                     </button>
-                    <button className="modal-checkout-btn" onClick={() => { onClose(); onCheckoutProduct({ ...product, qty }); }}>
+                    <button className="modal-checkout-btn" disabled={isOutOfStock || qty < 1} onClick={handleCheckout}>
                       <span>Checkout</span>
                     </button>
                   </>

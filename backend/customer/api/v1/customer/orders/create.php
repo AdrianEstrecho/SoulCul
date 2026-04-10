@@ -37,15 +37,20 @@ foreach ($cartItems as $item) {
 // Generate order number
 $orderNumber = 'ORD-' . strtoupper(uniqid());
 
+$paymentMethod = strtolower(trim((string) ($body['payment_method'] ?? '')));
+$isCashOnDelivery = in_array($paymentMethod, ['cod', 'cash_on_delivery', 'cash on delivery'], true);
+$initialStatus = $isCashOnDelivery ? 'cash_on_delivery_approved' : 'online_payment_processed';
+
 // Create order
 $stmt = $db->prepare("
     INSERT INTO orders (order_number, user_id, status, subtotal, total_amount,
                        shipping_address, shipping_city, shipping_province, shipping_phone)
-    VALUES (?, ?, 'pending', ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 ");
 $stmt->execute([
     $orderNumber,
     $userId,
+    $initialStatus,
     $subtotal,
     $subtotal,
     $body['shipping_address'],

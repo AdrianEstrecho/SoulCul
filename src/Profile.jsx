@@ -42,6 +42,10 @@ const icons = {
 };
 
 const statusColor = {
+  cash_on_delivery_approved: { bg: "#fef3c7", color: "#92400e" },
+  online_payment_processed: { bg: "#dbeafe", color: "#1e40af" },
+  waiting_for_courier: { bg: "#e0f2fe", color: "#0c4a6e" },
+  to_be_delivered: { bg: "#ede9fe", color: "#5b21b6" },
   delivered: { bg: "#d1fae5", color: "#065f46" },
   shipped: { bg: "#dbeafe", color: "#1e40af" },
   processing: { bg: "#fef3c7", color: "#92400e" },
@@ -66,7 +70,9 @@ const safeText = (value, fallback = "Not set") => {
 
 const formatStatus = (value) => {
   const raw = String(value || "pending").toLowerCase();
-  return raw.charAt(0).toUpperCase() + raw.slice(1);
+  return raw
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
 const formatPeso = (value) => `₱${Number(value || 0).toLocaleString()}`;
@@ -595,11 +601,12 @@ function OrdersSection() {
         {orders.map((o) => {
           const rawStatus = String(o.status || "pending").toLowerCase();
           const statusStyle = statusColor[rawStatus] || statusColor.pending;
+          const orderLabel = o.order_number ? String(o.order_number) : `#${o.id}`;
           return (
           <div key={o.id} className="order-card">
             <div className="order-emoji">📦</div>
             <div className="order-info">
-              <div className="order-id">#{o.id}</div>
+              <div className="order-id">{orderLabel}</div>
               <div className="order-meta">{safeDateLabel(o.created_at)}</div>
             </div>
             <div className="order-right">
@@ -1028,6 +1035,8 @@ function NotificationsSection() {
   const defaultSettings = { orders: true, promos: true, wishlist: false, newsletter: false, sms: true };
   const [settings, setSettings] = useState(defaultSettings);
   const [isLoading, setIsLoading] = useState(true);
+  const [notifLoading, setNotifLoading] = useState(true);
+  const [alerts, setAlerts] = useState([]);
   const [savingKey, setSavingKey] = useState(null);
   const [saveError, setSaveError] = useState("");
 
@@ -1039,22 +1048,39 @@ function NotificationsSection() {
       setSaveError("");
 
       try {
-        if (!customerAPI || typeof customerAPI.getNotificationSettings !== "function") {
-          return;
-        }
-
-        const result = await customerAPI.getNotificationSettings();
+        const [settingsResult, alertsResult] = await Promise.all([
+          customerAPI && typeof customerAPI.getNotificationSettings === "function"
+            ? customerAPI.getNotificationSettings()
+            : Promise.resolve({ data: defaultSettings }),
+          customerAPI && typeof customerAPI.getNotifications === "function"
+            ? customerAPI.getNotifications({ limit: 20 })
+            : Promise.resolve({ data: [] }),
+        ]);
         if (!mounted) return;
 
-        if (result?.success && result.data) {
-          setSettings((prev) => ({ ...prev, ...result.data }));
+        if (settingsResult?.success && settingsResult.data) {
+          setSettings((prev) => ({ ...prev, ...settingsResult.data }));
         }
+
+        const rows = Array.isArray(alertsResult?.data) ? alertsResult.data : [];
+        const mappedAlerts = rows.map((row) => ({
+          id: Number(row.id),
+          type: String(row.type || "general"),
+          title: String(row.title || "Notification"),
+          message: String(row.message || ""),
+          status: String(row?.meta?.status || "").toLowerCase(),
+          orderNumber: String(row?.meta?.order_number || ""),
+          createdAt: row.created_at,
+          isRead: Boolean(row.is_read),
+        }));
+        setAlerts(mappedAlerts);
       } catch (error) {
         if (!mounted) return;
         setSaveError(error?.message || "Failed to load notification settings.");
       } finally {
         if (mounted) {
           setIsLoading(false);
+          setNotifLoading(false);
         }
       }
     };
@@ -1062,6 +1088,37 @@ function NotificationsSection() {
     loadSettings();
     return () => { mounted = false; };
   }, []);
+
+  const markAlertRead = async (alertId) => {
+    const id = Number(alertId);
+    if (!id) return;
+
+    setAlerts((prev) => prev.map((entry) => (
+      entry.id === id ? { ...entry, isRead: true } : entry
+    )));
+
+    try {
+      if (!customerAPI || typeof customerAPI.markNotificationRead !== "function") {
+        return;
+      }
+      await customerAPI.markNotificationRead(id);
+    } catch (error) {
+      setSaveError(error?.message || "Failed to mark alert as read.");
+    }
+  };
+
+  const markAllAlertsRead = async () => {
+    setAlerts((prev) => prev.map((entry) => ({ ...entry, isRead: true })));
+
+    try {
+      if (!customerAPI || typeof customerAPI.markAllNotificationsRead !== "function") {
+        return;
+      }
+      await customerAPI.markAllNotificationsRead();
+    } catch (error) {
+      setSaveError(error?.message || "Failed to mark all alerts as read.");
+    }
+  };
 
   const handleToggle = async (key) => {
     const nextValue = !settings[key];
@@ -1112,6 +1169,43 @@ function NotificationsSection() {
             </div>
           </div>
         ))}
+      </div>
+
+      <div style={{ marginTop: 22 }}>
+        <div className="pd-header" style={{ marginBottom: 10 }}>
+          <h3 className="section-title" style={{ marginBottom: 0, fontSize: 17 }}>Recent Alerts</h3>
+          {alerts.some((entry) => !entry.isRead) && (
+            <button className="edit-btn" onClick={markAllAlertsRead}>Mark all read</button>
+          )}
+        </div>
+
+        {notifLoading ? (
+          <div style={EMPTY_STATE_STYLE}>Loading alerts...</div>
+        ) : alerts.length === 0 ? (
+          <div style={EMPTY_STATE_STYLE}>No notification alerts yet.</div>
+        ) : (
+          <div className="orders-list">
+            {alerts.map((entry) => {
+              const statusStyle = statusColor[entry.status] || statusColor.pending;
+              return (
+                <div key={entry.id} className="order-card" style={{ opacity: entry.isRead ? 0.82 : 1 }} onClick={() => markAlertRead(entry.id)}>
+                  <div className="order-emoji">{entry.type === "order_status" || entry.type === "order_created" ? "📦" : "🔔"}</div>
+                  <div className="order-info">
+                    <div className="order-id">{entry.title}</div>
+                    <div className="order-meta">{safeDateLabel(entry.createdAt)}</div>
+                    {entry.message && <div className="notif-desc" style={{ marginTop: 6 }}>{entry.message}</div>}
+                  </div>
+                  <div className="order-right" style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
+                    {entry.status && (
+                      <span className="order-status" style={statusStyle}>{formatStatus(entry.status)}</span>
+                    )}
+                    {!entry.isRead && <span className="default-badge">New</span>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

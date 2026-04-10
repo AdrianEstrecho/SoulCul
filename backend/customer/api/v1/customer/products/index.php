@@ -35,12 +35,15 @@ if ($featuredOnly) {
 $whereClause = implode(' AND ', $where);
 
 $stmt = $db->prepare("
-    SELECT p.id, p.name, p.slug, p.description, p.price, 
+    SELECT p.id, p.name, p.slug, p.description, p.material, p.price,
            p.discount_price, p.featured_image_url, p.quantity_in_stock, p.is_featured,
-           l.name as location_name, c.name as category_name
+           p.rating_average,
+           l.name as location_name, c.name as category_name,
+           a.full_name as seller_name
     FROM products p
     JOIN locations l ON p.location_id = l.id
     JOIN categories c ON p.category_id = c.id
+    LEFT JOIN admins a ON p.admin_id = a.id
     WHERE $whereClause
     ORDER BY p.is_featured DESC, p.created_at DESC, p.id DESC
     LIMIT ? OFFSET ?

@@ -89,6 +89,13 @@ export default function Navbar({ cartCount, onGoHome, hideBackButton }) {
     });
   }, []);
 
+  const formatStatusLabel = useCallback((value) => {
+    return String(value || "")
+      .toLowerCase()
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  }, []);
+
   const loadNotifications = useCallback(async () => {
     if (!isLoggedIn || isGuest) {
       setNotifications([]);
@@ -107,8 +114,22 @@ export default function Navbar({ cartCount, onGoHome, hideBackButton }) {
       const rows = Array.isArray(response?.data) ? response.data : [];
 
       const mapped = rows.map((row) => ({
+        ...row,
         id: row.id,
-        text: row.title ? `${row.title}: ${row.message}` : row.message,
+        text: (() => {
+          const statusLabel = formatStatusLabel(row?.meta?.status);
+          const orderNumber = row?.meta?.order_number;
+
+          if (String(row.type || "").toLowerCase() === "order_status" && orderNumber && statusLabel) {
+            return `Order ${orderNumber} is now ${statusLabel}.`;
+          }
+
+          if (String(row.type || "").toLowerCase() === "order_created" && orderNumber) {
+            return `Order ${orderNumber} has been placed successfully.`;
+          }
+
+          return row.title ? `${row.title}: ${row.message}` : row.message;
+        })(),
         time: formatNotificationTime(row.created_at),
         read: Boolean(row.is_read),
       }));
@@ -119,7 +140,7 @@ export default function Navbar({ cartCount, onGoHome, hideBackButton }) {
     } finally {
       setNotifLoading(false);
     }
-  }, [isLoggedIn, isGuest, formatNotificationTime]);
+  }, [isLoggedIn, isGuest, formatNotificationTime, formatStatusLabel]);
 
   const markAsRead = async (id) => {
     const updated = notifications.map((n) => n.id === id ? { ...n, read: true } : n);

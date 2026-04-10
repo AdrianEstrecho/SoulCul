@@ -48,9 +48,21 @@ const pageSizeState = {
 
 const PROVINCES = ["Vigan", "Baguio", "Tagaytay", "Bohol", "Boracay"];
 const SUBCATS = ["Clothes", "Handicrafts", "Delicacies", "Decorations", "Homeware"];
-const ORDER_STATUSES = ["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"];
+const ORDER_STATUSES = [
+  "cash_on_delivery_approved",
+  "online_payment_processed",
+  "waiting_for_courier",
+  "shipped",
+  "to_be_delivered",
+  "delivered",
+  "cancelled",
+];
 const ORDER_FILTER_STATUS_MAP = {
   completed: "delivered",
+  cod_approved: "cash_on_delivery_approved",
+  "cod approved": "cash_on_delivery_approved",
+  pending: "waiting_for_courier",
+  processing: "waiting_for_courier",
 };
 
 function escapeHtml(value) {
@@ -90,6 +102,10 @@ function splitFullName(fullName) {
 function getStatusBadge(status) {
   const s = String(status || "").toLowerCase();
   const badgeMap = {
+    cash_on_delivery_approved: "badge-pending",
+    online_payment_processed: "badge-processing",
+    waiting_for_courier: "badge-processing",
+    to_be_delivered: "badge-shipped",
     active: "badge-active",
     inactive: "badge-inactive",
     pending: "badge-pending",
@@ -607,7 +623,7 @@ async function renderDashboard() {
     document.getElementById("stat-products").textContent = String(d.total_products || 0);
     document.getElementById("stat-stock").textContent = String(d.total_stock || 0);
     document.getElementById("stat-orders").textContent = String(d.total_orders || 0);
-    document.getElementById("stat-pending-sub").textContent = `${d.pending_orders || 0} pending`;
+    document.getElementById("stat-pending-sub").textContent = `${d.pending_orders || 0} in fulfillment`;
     document.getElementById("stat-revenue").textContent = toCurrency(d.total_revenue || 0);
     document.getElementById("stat-users").textContent = String(d.total_users || 0);
     document.getElementById("stat-lowstock").textContent = String(d.low_stock_count || 0);
@@ -624,7 +640,15 @@ async function renderDashboard() {
       statusMap[String(s.status || "").toLowerCase()] = Number(s.count || 0);
     });
 
-    const statusOrder = ["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"];
+    const statusOrder = [
+      "cash_on_delivery_approved",
+      "online_payment_processed",
+      "waiting_for_courier",
+      "shipped",
+      "to_be_delivered",
+      "delivered",
+      "cancelled",
+    ];
     document.getElementById("order-status-breakdown").innerHTML = statusOrder
       .map(s => `<div class="ost"><div class="ost-val">${statusMap[s] || 0}</div><div class="ost-lbl">${escapeHtml(toTitleCase(s))}</div></div>`)
       .join("");
@@ -747,7 +771,7 @@ function normalizeProduct(p) {
   return {
     id: p.id,
     name: p.name,
-    brand: p.brand || "",
+    brand: p.material || p.brand || "",
     desc: p.description || "",
     category: p.category || "",
     subcategory: p.subcategory || "",
@@ -910,7 +934,7 @@ async function saveProduct() {
 
   const payload = {
     name: document.getElementById("p-name").value.trim(),
-    brand: document.getElementById("p-brand").value.trim(),
+    material: document.getElementById("p-brand").value.trim(),
     description: document.getElementById("p-desc").value.trim(),
     category: document.getElementById("p-category").value,
     subcategory: document.getElementById("p-subcategory").value,
@@ -1112,7 +1136,7 @@ function getConfirmPill(order) {
   if (String(order.status).toLowerCase() === "delivered") {
     return '<span class="confirm-pill confirm-received" title="Customer confirmed receipt"><i class="fa-solid fa-circle-check"></i> Received</span>';
   }
-  if (String(order.status).toLowerCase() === "shipped") {
+  if (["shipped", "to_be_delivered"].includes(String(order.status).toLowerCase())) {
     return '<span class="confirm-pill confirm-pending" title="Waiting for customer confirmation"><i class="fa-regular fa-clock"></i> Pending</span>';
   }
   return "";
@@ -1155,6 +1179,9 @@ async function renderOrders(list) {
     tbody.innerHTML = paged.items.length
       ? paged.items.map(o => {
         const status = String(o.status || "").toLowerCase();
+        const statusesForSelect = ORDER_STATUSES.includes(status)
+          ? ORDER_STATUSES
+          : [status, ...ORDER_STATUSES];
         return `
         <tr>
           <td><b>${escapeHtml(o.order_number || o.id)}</b></td>
@@ -1163,7 +1190,7 @@ async function renderOrders(list) {
           <td>
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
               <select class="status-dropdown status-${escapeHtml(status)}" onchange="changeOrderStatusInline('${o.id}', this.value)">
-                ${ORDER_STATUSES.map(s => `<option value="${s}" ${status === s ? "selected" : ""}>${toTitleCase(s)}</option>`).join("")}
+                ${statusesForSelect.map(s => `<option value="${s}" ${status === s ? "selected" : ""}>${toTitleCase(s)}</option>`).join("")}
               </select>
               ${getConfirmPill(o)}
             </div>
@@ -1230,15 +1257,25 @@ async function updateOrderStatus() {
     return;
   }
 
-  const flow = ["pending", "confirmed", "processing", "shipped", "delivered"];
   const current = String(order.status || "").toLowerCase();
-  const idx = flow.indexOf(current);
-  if (idx < 0 || idx >= flow.length - 1) {
+  const nextByStatus = {
+    cash_on_delivery_approved: "waiting_for_courier",
+    online_payment_processed: "waiting_for_courier",
+    waiting_for_courier: "shipped",
+    shipped: "to_be_delivered",
+    to_be_delivered: "delivered",
+    pending: "waiting_for_courier",
+    confirmed: "waiting_for_courier",
+    processing: "waiting_for_courier",
+  };
+
+  const nextStatus = nextByStatus[current];
+  if (!nextStatus) {
     showToast("Order already in final status");
     return;
   }
 
-  await changeOrderStatusInline(order.id, flow[idx + 1]);
+  await changeOrderStatusInline(order.id, nextStatus);
   closeModal("modal-order");
 }
 

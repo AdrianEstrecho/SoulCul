@@ -6,7 +6,19 @@ $body = getBody();
 $id   = (int) $_route['id'];
 requireFields($body, ['status']);
 
-$allowed = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
+$allowed = [
+    'cash_on_delivery_approved',
+    'online_payment_processed',
+    'waiting_for_courier',
+    'shipped',
+    'to_be_delivered',
+    'delivered',
+    'cancelled',
+    // Backward-compatible legacy values
+    'pending',
+    'confirmed',
+    'processing',
+];
 $status  = strtolower($body['status']);
 if (!in_array($status, $allowed)) {
     error('Invalid status. Allowed: ' . implode(', ', $allowed), 422);
