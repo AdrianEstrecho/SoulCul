@@ -34,7 +34,11 @@ export default function LandingPage({ cartCount }) {
   const navigate = useNavigate();
   const [zooming, setZooming] = useState(false);
 
-  const handleHeroClick = () => {
+  const handleHeroClick = (event) => {
+    const clickedInsideNavbar = event.target instanceof Element && Boolean(event.target.closest(".navbar"));
+    if (clickedInsideNavbar) {
+      return;
+    }
     setZooming(true);
     setTimeout(() => navigate("/Map"), 600);
   };

@@ -174,7 +174,7 @@ export default function Navbar({ cartCount, onGoHome, hideBackButton }) {
   }, [notifOpen]);
 
   return (
-    <nav className={`navbar${scrolled ? " scrolled" : ""}`}>
+    <nav className={`navbar${scrolled ? " scrolled" : ""}`} onClickCapture={(e) => e.stopPropagation()}>
 
       <div className="navbar-left">
         {!hideBackButton && (
@@ -198,6 +198,7 @@ export default function Navbar({ cartCount, onGoHome, hideBackButton }) {
               if (item === "Products") navigate("/ProductPage");
               if (item === "About Us") navigate("/AboutUs");
             }}
+            onMouseDown={(e) => e.stopPropagation()}
           >
             {item}
           </span>
