@@ -34,8 +34,8 @@ export default function Navbar({ cartCount, onGoHome, hideBackButton }) {
   const [notifications, setNotifications] = useState([]);
   const [notifLoading, setNotifLoading] = useState(false);
   const notifRef = useRef(null);
-  const isGuest = getCookie("soulcul_currentUser") === "guest";
-  const isLoggedIn = getCookie("soulcul_loggedIn") === "true" || !!getCookie("customer_token");
+  const isGuest = getCookie("soucul_currentUser") === "guest";
+  const isLoggedIn = getCookie("soucul_loggedIn") === "true" || !!getCookie("customer_token");
   const navigate = useNavigate();
   const location = useLocation();
   const getActiveNav = () => {

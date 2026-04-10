@@ -70,7 +70,7 @@ function LoginRequiredModal({ onClose, onGoToLogin }) {
 // Seed default account on first load
 
 
-export default function SoulCul() {
+export default function Soucul() {
   const SESSION_MAX_AGE_DAYS = 15;
 
   // Ctrl+Alt+. shortcut to open admin panel
@@ -89,14 +89,14 @@ export default function SoulCul() {
   const [cartItems, setCartItems] = useState([]);
   const [directCheckoutItem, setDirectCheckoutItem] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    const legacyFlag = getCookie("soulcul_loggedIn") === "true";
+    const legacyFlag = getCookie("soucul_loggedIn") === "true";
     const hasToken = !!getCookie("customer_token");
     return legacyFlag || hasToken;
   });
-  const [isGuest, setIsGuest] = useState(() => getCookie("soulcul_currentUser") === "guest");
+  const [isGuest, setIsGuest] = useState(() => getCookie("soucul_currentUser") === "guest");
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [userProfile, setUserProfile] = useState(() => {
-    const currentUser = getCookie("soulcul_currentUser");
+    const currentUser = getCookie("soucul_currentUser");
     const tokenUser = getJsonCookie("customer_user", null);
 
     if (tokenUser) {
@@ -132,8 +132,8 @@ export default function SoulCul() {
   const getCustomerApi = () => window.CustomerAPI;
 
   const clearCustomerSession = () => {
-    removeCookie("soulcul_loggedIn");
-    removeCookie("soulcul_currentUser");
+    removeCookie("soucul_loggedIn");
+    removeCookie("soucul_currentUser");
     removeCookie("customer_token");
     removeCookie("customer_user");
     removeCookie("customer_last_activity_at");
@@ -189,7 +189,7 @@ export default function SoulCul() {
     const hydrateSession = async () => {
       const api = getCustomerApi();
       const token = getCookie("customer_token");
-      const guestMode = getCookie("soulcul_currentUser") === "guest";
+      const guestMode = getCookie("soucul_currentUser") === "guest";
 
       if (guestMode) {
         if (!active) return;
@@ -211,7 +211,7 @@ export default function SoulCul() {
         return;
       }
 
-      setCookie("soulcul_loggedIn", "true", { maxAgeDays: SESSION_MAX_AGE_DAYS });
+      setCookie("soucul_loggedIn", "true", { maxAgeDays: SESSION_MAX_AGE_DAYS });
       if (!active) return;
       setIsLoggedIn(true);
       setIsGuest(false);
@@ -231,7 +231,7 @@ export default function SoulCul() {
             createdAt: p.created_at || "",
           };
           if (active) setUserProfile(mappedProfile);
-          if (p.email) setCookie("soulcul_currentUser", p.email, { maxAgeDays: SESSION_MAX_AGE_DAYS });
+          if (p.email) setCookie("soucul_currentUser", p.email, { maxAgeDays: SESSION_MAX_AGE_DAYS });
         }
 
         await hydrateCartFromAPI();
@@ -257,9 +257,9 @@ export default function SoulCul() {
   }, []);
 
   const handleLogin = (profile) => {
-    setCookie("soulcul_loggedIn", "true", { maxAgeDays: SESSION_MAX_AGE_DAYS });
+    setCookie("soucul_loggedIn", "true", { maxAgeDays: SESSION_MAX_AGE_DAYS });
     if (profile?.email) {
-      setCookie("soulcul_currentUser", profile.email, { maxAgeDays: SESSION_MAX_AGE_DAYS });
+      setCookie("soucul_currentUser", profile.email, { maxAgeDays: SESSION_MAX_AGE_DAYS });
     }
 
     setIsLoggedIn(true);
@@ -280,8 +280,8 @@ export default function SoulCul() {
   };
 
   const handleGuestLogin = () => {
-    setCookie("soulcul_loggedIn", "true", { maxAgeDays: SESSION_MAX_AGE_DAYS });
-    setCookie("soulcul_currentUser", "guest", { maxAgeDays: SESSION_MAX_AGE_DAYS });
+    setCookie("soucul_loggedIn", "true", { maxAgeDays: SESSION_MAX_AGE_DAYS });
+    setCookie("soucul_currentUser", "guest", { maxAgeDays: SESSION_MAX_AGE_DAYS });
     setIsLoggedIn(true);
     setIsGuest(true);
     setUserProfile(GUEST_PROFILE);

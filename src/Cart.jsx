@@ -124,7 +124,7 @@ export default function Cart({ cartItems = [], onUpdateQty = () => {}, onRemove 
       }}>
         {/* Voucher */}
         <div style={{ maxWidth: 760, margin: "0 auto 16px", color: "rgba(255,255,255,0.85)", fontSize: 14, fontWeight: 600 }}>
-          SoulCul Voucher
+          SouCul Voucher
           <input
             value={voucher}
             onChange={(e) => setVoucher(e.target.value)}

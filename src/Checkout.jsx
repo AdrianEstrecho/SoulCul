@@ -324,8 +324,8 @@ const handlePlaceOrder = async (e) => {
                     <p>Transfer the total amount to our bank account after placing your order.</p>
                     <ul>
                       <li>Amount to transfer: <strong>₱{total.toLocaleString()}</strong></li>
-                      <li>SoulCul Account: <strong>BDO 0012-3456-7890</strong></li>
-                      <li>Account Name: <strong>SoulCul Trading Inc.</strong></li>
+                      <li>SouCul Account: <strong>BDO 0012-3456-7890</strong></li>
+                      <li>Account Name: <strong>SouCul Trading Inc.</strong></li>
                       <li>Please upload your proof of transfer within 24 hours.</li>
                       <li>Your order will be processed once payment is verified.</li>
                     </ul>

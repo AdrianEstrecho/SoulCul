@@ -27,7 +27,7 @@ export default function AboutUs({ cartCount }) {
         </div>
       </section>
 
-      {/* What is SoulCul */}
+      {/* What is SouCul */}
       <section className="about-section">
         <h2 className="about-section-title">What is SouCul?</h2>
         <div className="about-section-body">
@@ -120,7 +120,7 @@ export default function AboutUs({ cartCount }) {
         </div>
       </section>
 
-      {/* The People Behind SoulCul */}
+      {/* The People Behind SouCul */}
       <section className="about-section about-section-alt">
         <h2 className="about-section-title">The People Behind SouCul</h2>
         <p className="about-section-intro">
@@ -195,7 +195,7 @@ export default function AboutUs({ cartCount }) {
         </div>
       </section>
 
-      {/* Why Choose SoulCul */}
+      {/* Why Choose SouCul */}
       <section className="about-section about-section-alt">
         <h2 className="about-section-title">Why Choose SouCul?</h2>
         <div className="about-section-body">
