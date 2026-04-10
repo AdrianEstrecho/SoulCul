@@ -306,15 +306,17 @@ export default function Soucul() {
   const handleAddToCart = async (product) => {
     if (!isLoggedIn) {
       setShowLoginModal(true);
-      return;
+      return false;
     }
 
     try {
       const api = getCustomerApi();
       await api.addToCart(product.id, product.qty || 1);
       await hydrateCartFromAPI();
+      return true;
     } catch (error) {
       console.error('Failed to add to cart:', error);
+      return false;
     }
   };
 
@@ -364,9 +366,10 @@ export default function Soucul() {
   const handleDirectCheckout = (product) => {
     if (!isLoggedIn || isGuest) {
       setShowLoginModal(true);
-      return;
+      return false;
     }
     setDirectCheckoutItem({ ...product, qty: product.qty || 1 });
+    return true;
   };
 
   const handleOrderPlaced = async () => {
@@ -404,6 +407,8 @@ export default function Soucul() {
             userProfile={userProfile}
             onUpdateProfile={setUserProfile}
             cartCount={cartCount}
+            onAddToCart={handleAddToCart}
+            onDirectCheckout={handleDirectCheckout}
             isLoggedIn={isLoggedIn}
             onLogout={handleLogout}
           />
@@ -413,6 +418,8 @@ export default function Soucul() {
             userProfile={userProfile}
             onUpdateProfile={setUserProfile}
             cartCount={cartCount}
+            onAddToCart={handleAddToCart}
+            onDirectCheckout={handleDirectCheckout}
             isLoggedIn={isLoggedIn}
             onLogout={handleLogout}
           />

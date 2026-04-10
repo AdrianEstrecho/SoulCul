@@ -8,7 +8,7 @@ import cloud2 from "./assets/3 1.png";
 import cloud3 from "./assets/3A.png";
 import cloud4 from "./assets/4A.png";
 
-import fallbackImage       from "./assets/Shirt.png";
+import fallbackImage       from "./assets/no-image.webp";
 
 // ── Data (database-driven) ────────────────────────────────────────────────
 const CATEGORY_DESCRIPTIONS = {
@@ -174,16 +174,18 @@ function PPProductModal({ product, onClose, onAddToCart, onCheckoutProduct }) {
   const price = `₱${product.price.toLocaleString()}`;
   const totalPrice = `₱${(product.price * Math.max(0, qty)).toLocaleString()}`;
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (isOutOfStock || qty < 1) return;
-    onAddToCart({ ...product, qty });
+    const result = await Promise.resolve(onAddToCart?.({ ...product, qty }));
+    if (result === false) return;
     setAdded(true);
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (isOutOfStock || qty < 1) return;
+    const result = await Promise.resolve(onCheckoutProduct?.({ ...product, qty }));
+    if (result === false) return;
     onClose();
-    onCheckoutProduct({ ...product, qty });
   };
 
   return (
@@ -490,12 +492,16 @@ export default function ProductPage({ cartCount, onAddToCart, onDirectCheckout }
   }, [filterOptions, activeFilter]);
 
   const addToCart = (product) => {
-    onAddToCart({ ...product, image: product.imageUrl });
+    if (typeof onAddToCart !== "function") return false;
+    return onAddToCart({ ...product, image: product.imageUrl });
   };
 
   const handleCheckout = (product) => {
-    onDirectCheckout({ ...product, image: product.imageUrl });
+    if (typeof onDirectCheckout !== "function") return false;
+    const result = onDirectCheckout({ ...product, image: product.imageUrl });
+    if (result === false) return false;
     navigate("/Checkout");
+    return true;
   };
 
   const filtered = products.filter(p =>

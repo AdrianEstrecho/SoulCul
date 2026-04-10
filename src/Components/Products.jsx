@@ -137,16 +137,18 @@ function ProductModal({ product, onClose, onAddToCart, onCheckoutProduct }) {
   const price = `₱${product.price.toLocaleString()}`;
   const totalPrice = `₱${(product.price * Math.max(0, qty)).toLocaleString()}`;
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (isOutOfStock || qty < 1) return;
-    onAddToCart({ ...product, qty });
+    const result = await Promise.resolve(onAddToCart?.({ ...product, qty }));
+    if (result === false) return;
     setAdded(true);
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (isOutOfStock || qty < 1) return;
+    const result = await Promise.resolve(onCheckoutProduct?.({ ...product, qty }));
+    if (result === false) return;
     onClose();
-    onCheckoutProduct({ ...product, qty });
   };
 
   return (
@@ -250,14 +252,16 @@ export default function Products({ products, onAddToCart, onDirectCheckout }) {
   const [selectedProduct, setSelectedProduct] = useState(null);
 
   const handleAddToCart = (product) => {
-    onAddToCart(product);
+    if (typeof onAddToCart !== "function") return false;
+    return onAddToCart(product);
   };
 
   const handleCheckout = (product) => {
-    if (onDirectCheckout) {
-      onDirectCheckout(product);
-      navigate("/Checkout");
-    }
+    if (typeof onDirectCheckout !== "function") return false;
+    const result = onDirectCheckout(product);
+    if (result === false) return false;
+    navigate("/Checkout");
+    return true;
   };
 
   return (
