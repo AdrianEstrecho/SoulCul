@@ -1266,9 +1266,6 @@ function ReviewsSection() {
   const [reviews, setReviews] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
-  const [showAdd, setShowAdd] = useState(false);
-  const [draft, setDraft] = useState({ product_name: "", rating: 5, comment: "" });
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const loadReviews = async () => {
     setIsLoading(true);
@@ -1290,30 +1287,6 @@ function ReviewsSection() {
     loadReviews();
   }, []);
 
-  const addReview = async () => {
-    if (!draft.product_name.trim() || !draft.comment.trim()) {
-      setLoadError("Product name and comment are required.");
-      return;
-    }
-
-    setLoadError("");
-    setIsSubmitting(true);
-    try {
-      await customerAPI.createReview({
-        product_name: draft.product_name.trim(),
-        rating: Number(draft.rating),
-        comment: draft.comment.trim(),
-      });
-      setDraft({ product_name: "", rating: 5, comment: "" });
-      setShowAdd(false);
-      await loadReviews();
-    } catch (error) {
-      setLoadError(error?.message || "Failed to add review.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const removeReview = async (id) => {
     try {
       await customerAPI.deleteReview(id);
@@ -1326,53 +1299,6 @@ function ReviewsSection() {
   return (
     <div className="section-content">
       <h3 className="section-title">My Reviews</h3>
-      <div style={{ marginBottom: 14 }}>
-        <button className="edit-btn" onClick={() => setShowAdd((v) => !v)}>
-          <Icon d={icons.plus} size={14} />
-          {showAdd ? "Cancel" : "Add Review"}
-        </button>
-      </div>
-
-      {showAdd && (
-        <div className="review-card" style={{ marginBottom: 14 }}>
-          <div className="form-group" style={{ marginBottom: 10 }}>
-            <label className="form-label">Product Name</label>
-            <input
-              className="form-input"
-              value={draft.product_name}
-              onChange={(e) => setDraft((d) => ({ ...d, product_name: e.target.value }))}
-            />
-          </div>
-          <div className="form-group" style={{ marginBottom: 10 }}>
-            <label className="form-label">Rating</label>
-            <select
-              className="form-input"
-              value={draft.rating}
-              onChange={(e) => setDraft((d) => ({ ...d, rating: Number(e.target.value) }))}
-            >
-              <option value={5}>5 - Excellent</option>
-              <option value={4}>4 - Very Good</option>
-              <option value={3}>3 - Good</option>
-              <option value={2}>2 - Fair</option>
-              <option value={1}>1 - Poor</option>
-            </select>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Comment</label>
-            <textarea
-              className="form-input"
-              rows={4}
-              value={draft.comment}
-              onChange={(e) => setDraft((d) => ({ ...d, comment: e.target.value }))}
-            />
-          </div>
-          <div className="modal-actions" style={{ marginTop: 12 }}>
-            <button className="btn-cancel" onClick={() => setShowAdd(false)} disabled={isSubmitting}>Cancel</button>
-            <button className="btn-save" onClick={addReview} disabled={isSubmitting}>{isSubmitting ? "Saving..." : "Save Review"}</button>
-          </div>
-        </div>
-      )}
-
       {isLoading && <div style={EMPTY_STATE_STYLE}>Loading reviews...</div>}
       {loadError && <div className="auth-msg auth-msg-error" style={{ marginBottom: 12 }}>{loadError}</div>}
       {!isLoading && !loadError && reviews.length === 0 && (

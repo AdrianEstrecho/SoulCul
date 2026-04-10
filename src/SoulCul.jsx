@@ -302,9 +302,9 @@ export default function SoulCul() {
     setDirectCheckoutItem(null);
   };
 
-  // Add a product to the cart — requires real login (not guest)
+  // Add a product to the cart
   const handleAddToCart = async (product) => {
-    if (!isLoggedIn || isGuest) {
+    if (!isLoggedIn) {
       setShowLoginModal(true);
       return;
     }
@@ -388,7 +388,7 @@ export default function SoulCul() {
       );
     }
 
-    return (!isLoggedIn || isGuest) ? <Navigate to="/Login" replace /> : element;
+    return !isLoggedIn ? <Navigate to="/Login" replace /> : element;
   };
 
   // Shared props to pass to every page

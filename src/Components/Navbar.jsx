@@ -174,7 +174,7 @@ export default function Navbar({ cartCount, onGoHome, hideBackButton }) {
   }, [notifOpen]);
 
   return (
-    <nav className={`navbar${scrolled ? " scrolled" : ""}`} onClickCapture={(e) => e.stopPropagation()}>
+    <nav className={`navbar${scrolled ? " scrolled" : ""}`} onClick={(e) => e.stopPropagation()}>
 
       <div className="navbar-left">
         {!hideBackButton && (
@@ -290,7 +290,7 @@ export default function Navbar({ cartCount, onGoHome, hideBackButton }) {
         {/* Cart & Profile — their own glass pill */}
         <div className="icon-pill">
           <div className="cart-wrapper" onClick={() => {
-            if (!isLoggedIn || isGuest) { setShowGuestMsg(true); setTimeout(() => setShowGuestMsg(false), 3000); return; }
+            if (!isLoggedIn) { setShowGuestMsg(true); setTimeout(() => setShowGuestMsg(false), 3000); return; }
             navigate("/Cart");
           }} style={{ cursor: "pointer" }}>
             <CartIcon size={22} />
@@ -298,7 +298,7 @@ export default function Navbar({ cartCount, onGoHome, hideBackButton }) {
           </div>
           <div className="icon-pill-divider" />
           <button className="icon-btn" onClick={() => {
-            if (!isLoggedIn || isGuest) { setShowGuestMsg(true); setTimeout(() => setShowGuestMsg(false), 3000); return; }
+            if (!isLoggedIn) { setShowGuestMsg(true); setTimeout(() => setShowGuestMsg(false), 3000); return; }
             navigate("/Profile");
           }}>
             <UserIcon />

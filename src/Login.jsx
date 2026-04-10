@@ -211,6 +211,10 @@ export default function Login({ onLogin, onGuestLogin }) {
               <button className="auth-btn auth-btn-outline" onClick={switchToSignup}>SIGN UP</button>
               <button className="auth-btn auth-btn-solid" onClick={handleLogin}>LOG IN</button>
             </div>
+
+            <div className="auth-footer-text" style={{ marginTop: 14 }}>
+              <a onClick={() => { if (onGuestLogin) { onGuestLogin(); navigate("/"); } }}>Continue as Guest</a>
+            </div>
           </div>
         </div>
       )}
