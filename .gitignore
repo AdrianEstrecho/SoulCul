@@ -31,9 +31,3 @@ backend/.env
 *.njsproj
 *.sln
 *.sw?
-
-# Composer
-backend/composer.lock
-
-# Temporary/setup scripts (optional - uncomment to ignore)
-# move-frontend-to-root.bat
