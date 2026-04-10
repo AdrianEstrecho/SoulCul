@@ -67,19 +67,19 @@ const products = [
   { id: "p14", name: "Handwoven Slippers",    location: "Bohol",    price: 999,  imageUrl: handwovenBasketsImg,category: "Handicrafts" },
   { id: "p15", name: "Wooden Ref Magnet",     location: "Bohol",    price: 999,  imageUrl: damiliImg,          category: "Handicrafts" },
   { id: "p16", name: "Bohol Wooden Keychain", location: "Bohol",    price: 999,  imageUrl: burnayImg,          category: "Handicrafts" },
-  { id: "p17", name: "Barong Tagalog",        location: "Manila",   price: 1499, imageUrl: shirtImg,           category: "Clothes" },
-  { id: "p18", name: "Inabel Shirt",          location: "Ilocos",   price: 899,  imageUrl: shirtImg,           category: "Clothes" },
-  { id: "p19", name: "Buko Pie",              location: "Laguna",   price: 250,  imageUrl: calamayImg,         category: "Delicacies" },
+  { id: "p17", name: "Barong Tagalog",        location: "Vigan",    price: 1499, imageUrl: shirtImg,           category: "Clothes" },
+  { id: "p18", name: "Inabel Shirt",          location: "Baguio",   price: 899,  imageUrl: shirtImg,           category: "Clothes" },
+  { id: "p19", name: "Buko Pie",              location: "Tagaytay", price: 250,  imageUrl: calamayImg,         category: "Delicacies" },
   { id: "p20", name: "Ube Halaya",            location: "Baguio",   price: 350,  imageUrl: ubeJamImg,          category: "Delicacies" },
-  { id: "p21", name: "Bibingka",              location: "Manila",   price: 180,  imageUrl: bibingkaImg,        category: "Delicacies" },
+  { id: "p21", name: "Bibingka",              location: "Boracay",  price: 180,  imageUrl: bibingkaImg,        category: "Delicacies" },
   { id: "p22", name: "Baguio Strawberry Jam", location: "Baguio",   price: 399,  imageUrl: baguioStrawberryImg,category: "Delicacies" },
   { id: "p23", name: "Calamay",               location: "Bohol",    price: 299,  imageUrl: calamayImg,         category: "Delicacies" },
-  { id: "p24", name: "Capiz Shell Frame",     location: "Capiz",    price: 799,  imageUrl: burnayImg,          category: "Decorations" },
-  { id: "p25", name: "Parol Lantern",         location: "Pampanga", price: 599,  imageUrl: damiliImg,          category: "Decorations" },
+  { id: "p24", name: "Capiz Shell Frame",     location: "Bohol",    price: 799,  imageUrl: burnayImg,          category: "Decorations" },
+  { id: "p25", name: "Parol Lantern",         location: "Tagaytay", price: 599,  imageUrl: damiliImg,          category: "Decorations" },
   { id: "p26", name: "Burnay Art Prints",     location: "Vigan",    price: 450,  imageUrl: burnayArtPrintsImg, category: "Decorations" },
-  { id: "p27", name: "Banig Mat",             location: "Leyte",    price: 699,  imageUrl: handwovenBasketsImg,category: "Homeware" },
+  { id: "p27", name: "Banig Mat",             location: "Boracay",  price: 699,  imageUrl: handwovenBasketsImg,category: "Homeware" },
   { id: "p28", name: "Clay Pot",              location: "Vigan",    price: 450,  imageUrl: burnayImg,          category: "Homeware" },
-  { id: "p29", name: "Rattan Furniture",      location: "Cebu",     price: 2499, imageUrl: furnituresImg,      category: "Homeware" },
+  { id: "p29", name: "Rattan Furniture",      location: "Baguio",   price: 2499, imageUrl: furnituresImg,      category: "Homeware" },
 ];
 
 const FILTERS = ["Handicrafts", "Clothes", "Delicacies", "Decorations", "Homeware"];
@@ -387,10 +387,10 @@ export default function ProductPage({ cartCount, onAddToCart, onDirectCheckout }
         .pp-hero {
           position: relative;
           width: 100%;
-          min-height: 900px;
           background: var(--teal-main);
           overflow: hidden;
           padding-top: 64px;
+          padding-bottom: 0;
           font-family: 'Inter', sans-serif;
           display: flex;
           flex-direction: column;
@@ -430,7 +430,7 @@ export default function ProductPage({ cartCount, onAddToCart, onDirectCheckout }
           align-items: center;
           text-align: center;
           width: 100%;
-          margin-top: 48px;
+          margin-top: 32px;
         }
 
         .hero-inner {
@@ -457,20 +457,26 @@ export default function ProductPage({ cartCount, onAddToCart, onDirectCheckout }
         .hero-btn:active { transform: scale(0.97); }
 
         /* ── Carousel ── */
+        .pp-carousel-outer {
+          position: relative;
+          z-index: 10;
+          width: 100%;
+          overflow: hidden;
+          padding-bottom: 56px;
+        }
+
         .pp-carousel-wrapper {
-          width: 100vw;
+          width: 100%;
           overflow: hidden;
           position: relative;
-          left: 50%;
-          transform: translateX(-14%);
         }
 
         .pp-carousel-track {
           display: flex;
           gap: 24px;
           width: max-content;
-          animation: ppCarouselScroll 25s linear infinite;
-          transform: translateX(-10%);
+          animation: ppCarouselScroll 30s linear infinite;
+          padding: 8px 24px 32px;
         }
 
         .pp-carousel-track:hover {
@@ -487,8 +493,8 @@ export default function ProductPage({ cartCount, onAddToCart, onDirectCheckout }
         }
 
         @keyframes ppCarouselScroll {
-          0%   { transform: translateX(-10%); }
-          100% { transform: translateX(-60%); }
+          0%   { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
         }
 
         /* ── Featured Card ── */
@@ -560,6 +566,26 @@ export default function ProductPage({ cartCount, onAddToCart, onDirectCheckout }
         .prod-cart-btn:hover { filter: brightness(1.1); }
         .prod-cart-btn:active, .prod-price-btn:active { transform: scale(0.95); }
 
+        /* ── Province Groups ── */
+        .province-group { margin-bottom: 56px; }
+        .province-group:last-child { margin-bottom: 0; }
+        .province-header {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 24px;
+          padding-bottom: 12px;
+          border-bottom: 2px solid rgba(255,255,255,0.25);
+        }
+        .province-pin { font-size: 20px; line-height: 1; }
+        .province-title {
+          font-family: 'Instrument Serif', serif;
+          font-size: clamp(22px, 3vw, 32px);
+          color: #fff;
+          font-weight: 400;
+          letter-spacing: -0.01em;
+        }
+
         /* ── Empty state ── */
         .empty-state { color: rgba(255,255,255,0.5); font-size: 18px; font-family: 'Inter', sans-serif; text-align: center; padding: 64px 0; grid-column: 1/-1; }
 
@@ -610,7 +636,9 @@ export default function ProductPage({ cartCount, onAddToCart, onDirectCheckout }
             <p className="hero-p">The Philippines is rich in diverse cultures, traditions, and languages.</p>
             <button className="hero-btn">Explore</button>
           </div>
+        </div>
 
+        <div className="pp-carousel-outer">
           <FeaturedCarousel products={featuredProducts} onSelect={setSelectedProduct} />
         </div>
       </section>
@@ -662,12 +690,27 @@ export default function ProductPage({ cartCount, onAddToCart, onDirectCheckout }
             <h2>{activeFilter}</h2>
             <div className="products-divider" />
           </div>
-          <div className="products-grid">
-            {filtered.length > 0
-              ? filtered.map((p, i) => <ProdCard key={i} product={p} onSelect={setSelectedProduct} />)
-              : <div className="empty-state">No products found.</div>
-            }
-          </div>
+          {filtered.length > 0
+            ? (() => {
+                const byProvince = filtered.reduce((acc, p) => {
+                  if (!acc[p.location]) acc[p.location] = [];
+                  acc[p.location].push(p);
+                  return acc;
+                }, {});
+                return Object.entries(byProvince).map(([province, items]) => (
+                  <div key={province} className="province-group">
+                    <div className="province-header">
+                      <span className="province-pin">📍</span>
+                      <h3 className="province-title">{province}</h3>
+                    </div>
+                    <div className="products-grid">
+                      {items.map((p, i) => <ProdCard key={i} product={p} onSelect={setSelectedProduct} />)}
+                    </div>
+                  </div>
+                ));
+              })()
+            : <div className="empty-state">No products found.</div>
+          }
         </div>
       </section>
 
