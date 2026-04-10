@@ -36,26 +36,17 @@ jobs:
           force_orphan: false
 
       - name: Trigger Hostinger frontend deploy webhook
-        if: env.HOSTINGER_BUILD_WEBHOOK_URL != ''
         env:
           HOSTINGER_BUILD_WEBHOOK_URL: ${{ secrets.HOSTINGER_BUILD_WEBHOOK_URL }}
         run: |
-          payload=$(cat <<'JSON'
-          {
-            "ref": "refs/heads/build",
-            "after": "${{ github.sha }}",
-            "repository": {
-              "full_name": "${{ github.repository }}",
-              "name": "${{ github.event.repository.name }}"
-            }
-          }
-          JSON
-          )
-
-          curl --fail --show-error --silent \
+          if [ -z "$HOSTINGER_BUILD_WEBHOOK_URL" ]; then
+            echo "No webhook URL set, skipping"
+            exit 0
+          fi
+          curl --fail --show-error \
             --request POST \
             --header "Content-Type: application/json" \
             --header "X-GitHub-Event: push" \
             --header "User-Agent: GitHub-Hookshot" \
-            --data "$payload" \
+            --data '{"ref": "refs/heads/build"}' \
             "$HOSTINGER_BUILD_WEBHOOK_URL"
