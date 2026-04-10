@@ -20,7 +20,7 @@ $items = $db->prepare(
 $items->execute([$id]);
 $order['items'] = $items->fetchAll();
 
-$pay = $db->prepare("SELECT payment_method, payment_status, transaction_id, amount FROM payments WHERE order_id = ?");
+$pay = $db->prepare("SELECT payment_method, payment_status, transaction_id, amount FROM payments WHERE order_id = ? ORDER BY id DESC LIMIT 1");
 $pay->execute([$id]);
 $order['payment'] = $pay->fetch() ?: null;
 

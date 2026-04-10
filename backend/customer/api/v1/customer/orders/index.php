@@ -20,7 +20,15 @@ $stmt = $db->prepare("
            CONCAT(u.first_name,' ',u.last_name) AS customer
     FROM orders o
     LEFT JOIN users u ON o.user_id = u.id
-        LEFT JOIN payments p ON p.order_id = o.id
+        LEFT JOIN (
+            SELECT p1.order_id, p1.payment_method, p1.payment_status
+            FROM payments p1
+            INNER JOIN (
+                SELECT order_id, MAX(id) AS latest_id
+                FROM payments
+                GROUP BY order_id
+            ) latest ON latest.latest_id = p1.id
+        ) p ON p.order_id = o.id
     WHERE o.user_id = ? AND o.is_archived = 0
     ORDER BY o.created_at DESC
 ");

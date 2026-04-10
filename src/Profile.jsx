@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "./Components/Navbar";
+import profileOrderFallbackImage from "./assets/no-image.jpg";
 
 // Get API instance
 const customerAPI = window.customerAPI || {};
@@ -84,6 +85,15 @@ const safeText = (value, fallback = "Not set") => {
   return text || fallback;
 };
 
+const resolveProfileImageUrl = (rawUrl) => {
+  const value = String(rawUrl || "").trim();
+
+  if (!value) return profileOrderFallbackImage;
+  if (/^https?:\/\//i.test(value) || value.startsWith("data:") || value.startsWith("blob:")) return value;
+  if (value.startsWith("/")) return value;
+  return `/${value.replace(/^\/+/, "")}`;
+};
+
 const formatStatus = (value) => {
   const raw = String(value || "pending").toLowerCase();
   return raw
@@ -99,12 +109,35 @@ const formatPaymentMethodLabel = (value) => {
     gcash: "GCash",
     credit_card: "Card",
     debit_card: "Card",
+    card: "Card",
     bank_transfer: "Bank Transfer",
+    bank: "Bank Transfer",
     paypal: "PayPal",
     cod: "Cash On Delivery",
+    online: "Online Payment",
   };
 
   return methodMap[raw] || formatStatus(raw);
+};
+
+const getPaymentStatusLabel = ({ paymentMethod, paymentStatus, orderStatus }) => {
+  const normalizedMethod = String(paymentMethod || "").toLowerCase();
+  const normalizedPaymentStatus = String(paymentStatus || "").toLowerCase();
+  const normalizedOrderStatus = String(orderStatus || "").toLowerCase();
+
+  if (normalizedMethod === "cod" || normalizedOrderStatus.includes("cash_on_delivery")) {
+    return "To be paid";
+  }
+
+  if (normalizedPaymentStatus === "failed" || normalizedPaymentStatus === "refunded") {
+    return formatStatus(normalizedPaymentStatus);
+  }
+
+  if (normalizedMethod || normalizedOrderStatus.includes("online_payment")) {
+    return "Paid";
+  }
+
+  return normalizedPaymentStatus ? formatStatus(normalizedPaymentStatus) : "Not specified";
 };
 
 const formatPeso = (value) => `₱${Number(value || 0).toLocaleString()}`;
@@ -692,9 +725,14 @@ function OrdersSection() {
 
           const paymentMethodRaw = String(detail?.payment?.payment_method || "").toLowerCase();
           const fallbackPaymentMethod = String(o.payment_method || "").toLowerCase();
-          const resolvedPaymentMethod = paymentMethodRaw || fallbackPaymentMethod;
+          const inferredPaymentMethod = rawStatus.includes("cash_on_delivery")
+            ? "cod"
+            : rawStatus.includes("online_payment")
+              ? "online"
+              : "";
+          const resolvedPaymentMethod = paymentMethodRaw || fallbackPaymentMethod || inferredPaymentMethod;
           const paymentMethodLabel = formatPaymentMethodLabel(
-            resolvedPaymentMethod || (rawStatus.includes("cash_on_delivery") ? "cod" : "")
+            resolvedPaymentMethod
           );
 
           const displayStatusLabel = (() => {
@@ -708,7 +746,11 @@ function OrdersSection() {
           })();
 
           const paymentStatusRaw = String(detail?.payment?.payment_status || "").toLowerCase();
-          const paymentStatusLabel = paymentStatusRaw ? formatStatus(paymentStatusRaw) : "Not specified";
+          const paymentStatusLabel = getPaymentStatusLabel({
+            paymentMethod: resolvedPaymentMethod,
+            paymentStatus: paymentStatusRaw,
+            orderStatus: rawStatus,
+          });
 
           return (
           <div key={o.id} className="order-card">
@@ -786,10 +828,19 @@ function OrdersSection() {
                             const quantity = Number(item?.quantity || 0);
                             const unitPrice = Number(item?.unit_price || 0);
                             const lineTotal = Number(item?.total_price ?? (quantity * unitPrice));
+                            const itemImage = resolveProfileImageUrl(item?.product_image_url);
 
                             return (
                               <div key={item.id || `${item.product_id}-${item.product_name}`} className="order-item-row">
-                                <span>{safeText(item.product_name, "Product")}</span>
+                                <div className="order-item-main">
+                                  <img
+                                    src={itemImage}
+                                    alt={safeText(item.product_name, "Product")}
+                                    className="order-item-thumb"
+                                    loading="lazy"
+                                  />
+                                  <span className="order-item-name">{safeText(item.product_name, "Product")}</span>
+                                </div>
                                 <span>{quantity}</span>
                                 <span>{formatPeso(unitPrice)}</span>
                                 <span>{formatPeso(lineTotal)}</span>
@@ -2127,6 +2178,26 @@ export default function Profile({ userProfile, onUpdateProfile, cartCount = 0, o
           border-bottom: 1px dashed #edf4f9;
         }
         .order-item-row:last-child { border-bottom: none; }
+        .order-item-main {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-width: 0;
+        }
+        .order-item-thumb {
+          width: 40px;
+          height: 40px;
+          border-radius: 8px;
+          object-fit: cover;
+          border: 1px solid #dbeaf2;
+          background: #eef6fb;
+          flex-shrink: 0;
+        }
+        .order-item-name {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
         .order-item-row span:nth-child(n+2),
         .order-items-head span:nth-child(n+2) {
           text-align: right;

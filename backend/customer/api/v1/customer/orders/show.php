@@ -28,7 +28,7 @@ if (!$order) {
 
 $items = [];
 try {
-    $itemsStmt = $db->prepare("\n        SELECT id, product_id, product_name, quantity, unit_price, total_price\n        FROM order_items\n        WHERE order_id = ?\n        ORDER BY id ASC\n    ");
+    $itemsStmt = $db->prepare("\n        SELECT\n            oi.id,\n            oi.product_id,\n            oi.product_name,\n            oi.quantity,\n            oi.unit_price,\n            oi.total_price,\n            p.featured_image_url AS product_image_url\n        FROM order_items oi\n        LEFT JOIN products p ON p.id = oi.product_id\n        WHERE oi.order_id = ?\n        ORDER BY oi.id ASC\n    ");
     $itemsStmt->execute([$orderId]);
     $items = $itemsStmt->fetchAll();
 } catch (Throwable) {
@@ -37,7 +37,7 @@ try {
 
 $payment = null;
 try {
-    $paymentStmt = $db->prepare("\n        SELECT payment_method, payment_status, transaction_id, amount, processed_at\n        FROM payments\n        WHERE order_id = ?\n        LIMIT 1\n    ");
+    $paymentStmt = $db->prepare("\n        SELECT payment_method, payment_status, transaction_id, amount, processed_at\n        FROM payments\n        WHERE order_id = ?\n        ORDER BY id DESC\n        LIMIT 1\n    ");
     $paymentStmt->execute([$orderId]);
     $payment = $paymentStmt->fetch() ?: null;
 } catch (Throwable) {
