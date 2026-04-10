@@ -31,4 +31,4 @@ jobs:
         env:
           HOSTINGER_BACKEND_WEBHOOK_URL: ${{ secrets.HOSTINGER_BACKEND_WEBHOOK_URL }}
         run: |
-          curl --fail --show-error --silent "$HOSTINGER_BACKEND_WEBHOOK_URL"
+          curl --fail --show-error --silent --request POST "$HOSTINGER_BACKEND_WEBHOOK_URL"

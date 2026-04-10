@@ -40,4 +40,4 @@ jobs:
         env:
           HOSTINGER_BUILD_WEBHOOK_URL: ${{ secrets.HOSTINGER_BUILD_WEBHOOK_URL }}
         run: |
-          curl --fail --show-error --silent "$HOSTINGER_BUILD_WEBHOOK_URL"
+          curl --fail --show-error --silent --request POST "$HOSTINGER_BUILD_WEBHOOK_URL"
