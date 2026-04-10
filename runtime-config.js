@@ -2,12 +2,12 @@
 //
 // Edit these values on the server without rebuilding frontend assets.
 // Example for Hostinger subdomains:
-// window.__SOUCUL_CONFIG__.adminApiBaseUrl = "https://api-admin.paleturquoise-gerbil-565865.hostingersite.com";
-// window.__SOUCUL_CONFIG__.customerApiBaseUrl = "https://api-customer.paleturquoise-gerbil-565865.hostingersite.com";
+window.__SOUCUL_CONFIG__.adminApiBaseUrl = "https://api-admin.soucul.store";
+window.__SOUCUL_CONFIG__.customerApiBaseUrl = "https://api-customer.soucul.store";
 //
 // Example for single-domain fallback (no subdomains):
-// window.__SOUCUL_CONFIG__.adminApiBaseUrl = "";
-// window.__SOUCUL_CONFIG__.customerApiBaseUrl = "";
+window.__SOUCUL_CONFIG__.adminApiBaseUrl = "";
+window.__SOUCUL_CONFIG__.customerApiBaseUrl = "";
 
 (function initSouculRuntimeConfig() {
 	const config = window.__SOUCUL_CONFIG__ || {};
