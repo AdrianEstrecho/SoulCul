@@ -193,13 +193,16 @@
         </div>
         <div class="filter-bar">
           <button class="filter-btn active" onclick="filterOrders('all',this)">All</button>
-          <button class="filter-btn" onclick="filterOrders('cash_on_delivery_requested',this)">COD Requested</button>
-          <button class="filter-btn" onclick="filterOrders('online_payment_requested',this)">Online Payment Requested</button>
+          <button class="filter-btn" onclick="filterOrders('pending_payment',this)">Pending Payment</button>
+          <button class="filter-btn" onclick="filterOrders('payment_confirmed',this)">Payment Confirmed</button>
+          <button class="filter-btn" onclick="filterOrders('cod_requested',this)">COD Requested</button>
+          <button class="filter-btn" onclick="filterOrders('cod_confirmed',this)">COD Confirmed</button>
+          <button class="filter-btn" onclick="filterOrders('processing',this)">Processing</button>
           <button class="filter-btn" onclick="filterOrders('waiting_for_courier',this)">Waiting for Courier</button>
-          <button class="filter-btn" onclick="filterOrders('Shipped',this)">Shipped</button>
-          <button class="filter-btn" onclick="filterOrders('to_be_delivered',this)">To Be Delivered</button>
-          <button class="filter-btn" onclick="filterOrders('Completed',this)">Delivered</button>
-          <button class="filter-btn" onclick="filterOrders('Cancelled',this)">Cancelled</button>
+          <button class="filter-btn" onclick="filterOrders('shipped',this)">Shipped</button>
+          <button class="filter-btn" onclick="filterOrders('out_for_delivery',this)">Out for Delivery</button>
+          <button class="filter-btn" onclick="filterOrders('delivered',this)">Delivered</button>
+          <button class="filter-btn" onclick="filterOrders('cancelled',this)">Cancelled</button>
         </div>
         <div class="table-wrap">
           <table>
@@ -532,6 +535,9 @@
         <h3><i class="fa-solid fa-box-open"></i> Order Info</h3>
         <div class="info-row"><span class="key">Order ID</span><span id="od-id">—</span></div>
         <div class="info-row"><span class="key">Status</span><span id="od-status">—</span></div>
+        <div class="info-row"><span class="key">Workflow Step</span><span id="od-workflow-step">—</span></div>
+        <div class="info-row"><span class="key">Next Step</span><span id="od-next-step">—</span></div>
+        <div class="info-row"><span class="key">Status Note</span><span id="od-status-note">—</span></div>
         <div class="info-row"><span class="key">Payment Method</span><span id="od-payment-method">—</span></div>
         <div class="info-row"><span class="key">Payment Status</span><span id="od-payment-status">—</span></div>
         <div class="info-row"><span class="key">Total</span><span id="od-total">—</span></div>
@@ -547,6 +553,7 @@
       <div class="table-wrap"><table><thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>Subtotal</th></tr></thead><tbody id="od-items"></tbody></table></div>
     </div>
     <div class="modal-footer">
+      <button class="btn btn-teal" id="od-advance-btn" onclick="updateOrderStatus()">Move to Next Step</button>
       <button class="btn btn-outline" onclick="closeModal('modal-order')">Close</button>
     </div>
   </div>

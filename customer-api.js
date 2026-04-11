@@ -163,7 +163,7 @@ class CustomerAPI {
       if (rawText) {
         try {
           data = JSON.parse(rawText);
-        } catch (parseError) {
+        } catch {
           const compact = rawText.slice(0, 120).replace(/\s+/g, ' ').trim().toLowerCase();
           if (compact.startsWith('<!doctype') || compact.startsWith('<html')) {
             throw new Error(`${API_CONFIG_ERROR_MESSAGE} Received HTML instead of JSON.`);
@@ -316,6 +316,13 @@ class CustomerAPI {
 
   async getOrder(orderId) {
     return await this.request(`/api/v1/customer/orders/${orderId}`);
+  }
+
+  async updateOrderStatus(orderId, status) {
+    return await this.request(`/api/v1/customer/orders/${orderId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status })
+    });
   }
 
   async checkout(data) {

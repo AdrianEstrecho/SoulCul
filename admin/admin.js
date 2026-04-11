@@ -49,10 +49,11 @@ const pageSizeState = {
 const PROVINCES = ["Vigan", "Baguio", "Tagaytay", "Bohol", "Boracay"];
 const SUBCATS = ["Clothes", "Handicrafts", "Delicacies", "Decorations", "Homeware"];
 const ORDER_STATUSES = [
-  "cash_on_delivery_requested",
   "online_payment_requested",
-  "cash_on_delivery_approved",
   "online_payment_processed",
+  "cash_on_delivery_requested",
+  "cash_on_delivery_approved",
+  "processing",
   "waiting_for_courier",
   "shipped",
   "to_be_delivered",
@@ -60,16 +61,226 @@ const ORDER_STATUSES = [
   "cancelled",
 ];
 const ORDER_FILTER_STATUS_MAP = {
-  completed: "delivered",
-  cod_requested: "cash_on_delivery_requested",
-  "cod requested": "cash_on_delivery_requested",
-  online_requested: "online_payment_requested",
-  "online requested": "online_payment_requested",
-  cod_approved: "cash_on_delivery_approved",
-  "cod approved": "cash_on_delivery_approved",
-  pending: "waiting_for_courier",
-  processing: "waiting_for_courier",
+  completed: ["delivered"],
+  pending_payment: ["online_payment_requested", "pending"],
+  payment_confirmed: ["online_payment_processed", "confirmed"],
+  cod_requested: ["cash_on_delivery_requested"],
+  cod_confirmed: ["cash_on_delivery_approved"],
+  out_for_delivery: ["to_be_delivered"],
+  delivered: ["delivered"],
+  cancelled: ["cancelled"],
+  waiting_for_courier: ["waiting_for_courier"],
+  shipped: ["shipped"],
+  processing: ["processing"],
+  "cod requested": ["cash_on_delivery_requested"],
+  online_requested: ["online_payment_requested", "pending"],
+  "online requested": ["online_payment_requested", "pending"],
+  cod_approved: ["cash_on_delivery_approved"],
+  "cod approved": ["cash_on_delivery_approved"],
+  pending: ["online_payment_requested", "pending"],
 };
+
+const ORDER_STATUS_META = {
+  online_payment_requested: {
+    label: "Pending Payment",
+    description: "Order created and waiting for online payment verification.",
+    badgeClass: "badge-pending",
+    dropdownClass: "status-pending-payment",
+    workflowStep: 1,
+  },
+  pending: {
+    label: "Pending Payment",
+    description: "Order created and waiting for online payment verification.",
+    badgeClass: "badge-pending",
+    dropdownClass: "status-pending-payment",
+    workflowStep: 1,
+  },
+  online_payment_processed: {
+    label: "Payment Confirmed",
+    description: "Online payment has been verified successfully.",
+    badgeClass: "badge-processing",
+    dropdownClass: "status-payment-confirmed",
+    workflowStep: 2,
+  },
+  confirmed: {
+    label: "Payment Confirmed",
+    description: "Payment confirmation completed.",
+    badgeClass: "badge-processing",
+    dropdownClass: "status-payment-confirmed",
+    workflowStep: 2,
+  },
+  cash_on_delivery_requested: {
+    label: "COD Requested",
+    description: "Cash on Delivery selected and waiting for admin confirmation.",
+    badgeClass: "badge-pending",
+    dropdownClass: "status-cod-requested",
+    workflowStep: 1,
+  },
+  cash_on_delivery_approved: {
+    label: "COD Confirmed",
+    description: "Cash on Delivery order is confirmed and ready for preparation.",
+    badgeClass: "badge-processing",
+    dropdownClass: "status-cod-confirmed",
+    workflowStep: 2,
+  },
+  processing: {
+    label: "Processing",
+    description: "Order is being prepared and packed.",
+    badgeClass: "badge-processing",
+    dropdownClass: "status-processing",
+    workflowStep: 3,
+  },
+  waiting_for_courier: {
+    label: "Waiting for Courier",
+    description: "Order is packed and ready for courier pickup.",
+    badgeClass: "badge-processing",
+    dropdownClass: "status-waiting-for-courier",
+    workflowStep: 4,
+  },
+  shipped: {
+    label: "Shipped",
+    description: "Order has been handed over to the courier.",
+    badgeClass: "badge-shipped",
+    dropdownClass: "status-shipped",
+    workflowStep: 5,
+  },
+  to_be_delivered: {
+    label: "Out for Delivery",
+    description: "Order is with the rider for final delivery.",
+    badgeClass: "badge-shipped",
+    dropdownClass: "status-out-for-delivery",
+    workflowStep: 6,
+  },
+  delivered: {
+    label: "Delivered",
+    description: "Order was successfully delivered to the customer.",
+    badgeClass: "badge-completed",
+    dropdownClass: "status-delivered",
+    workflowStep: 7,
+  },
+  cancelled: {
+    label: "Cancelled",
+    description: "Order was cancelled and fulfillment is stopped.",
+    badgeClass: "badge-cancelled",
+    dropdownClass: "status-cancelled",
+    workflowStep: null,
+  },
+};
+
+const ORDER_TERMINAL_STATUSES = ["delivered", "cancelled"];
+
+function normalizeOrderStatus(status) {
+  return String(status || "").toLowerCase().trim();
+}
+
+function getOrderStatusMeta(status, paymentMethod = "") {
+  const normalizedStatus = normalizeOrderStatus(status);
+  const normalizedMethod = String(paymentMethod || "").toLowerCase();
+  const baseMeta = ORDER_STATUS_META[normalizedStatus];
+
+  if (!baseMeta) {
+    return {
+      code: normalizedStatus,
+      label: toTitleCase(normalizedStatus),
+      description: "Status recorded by the system.",
+      badgeClass: "badge-inactive",
+      dropdownClass: "status-processing",
+      workflowStep: null,
+      isKnown: false,
+    };
+  }
+
+  if (normalizedStatus === "confirmed" && normalizedMethod === "cod") {
+    return {
+      ...baseMeta,
+      code: normalizedStatus,
+      label: "COD Confirmed",
+      description: "Cash on Delivery order is confirmed and ready for preparation.",
+      dropdownClass: "status-cod-confirmed",
+      isKnown: true,
+    };
+  }
+
+  return {
+    ...baseMeta,
+    code: normalizedStatus,
+    isKnown: true,
+  };
+}
+
+function getOrderFilterStatuses(filter) {
+  const normalizedFilter = String(filter || "all").toLowerCase();
+  const configured = ORDER_FILTER_STATUS_MAP[normalizedFilter];
+
+  if (!configured) {
+    return normalizedFilter === "all" ? [] : [normalizedFilter];
+  }
+
+  return Array.isArray(configured)
+    ? configured.map(normalizeOrderStatus).filter(Boolean)
+    : [normalizeOrderStatus(configured)];
+}
+
+function getNextOrderStatus(order) {
+  const current = normalizeOrderStatus(order?.status);
+  const paymentMethod = resolveOrderPaymentMethod(order?.payment_method, current);
+
+  if (current === "online_payment_requested" || current === "pending") {
+    return "online_payment_processed";
+  }
+
+  if (current === "online_payment_processed" || (current === "confirmed" && paymentMethod !== "cod")) {
+    return "processing";
+  }
+
+  if (current === "cash_on_delivery_requested") {
+    return "cash_on_delivery_approved";
+  }
+
+  if (current === "cash_on_delivery_approved" || (current === "confirmed" && paymentMethod === "cod")) {
+    return "processing";
+  }
+
+  if (current === "processing") {
+    return "waiting_for_courier";
+  }
+
+  if (current === "waiting_for_courier") {
+    return "shipped";
+  }
+
+  if (current === "shipped") {
+    return "to_be_delivered";
+  }
+
+  if (current === "to_be_delivered") {
+    return "delivered";
+  }
+
+  return null;
+}
+
+function getAllowedOrderStatusTransitions(order) {
+  const current = normalizeOrderStatus(order?.status);
+  if (!current) return [];
+
+  if (ORDER_TERMINAL_STATUSES.includes(current)) {
+    return [current];
+  }
+
+  const allowed = [current];
+  const next = getNextOrderStatus(order);
+  if (next) allowed.push(next);
+  allowed.push("cancelled");
+
+  return Array.from(new Set(allowed));
+}
+
+function getOrderStatusSelectOptions(order) {
+  return getAllowedOrderStatusTransitions(order)
+    .map(normalizeOrderStatus)
+    .filter(Boolean);
+}
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -128,7 +339,16 @@ function getOrderPaymentStatusLabel({ paymentMethod, paymentStatus, orderStatus 
     return toTitleCase(status);
   }
 
-  if (method || order.includes("online_payment")) {
+  const isOnline = (method && method !== "cod") || order.includes("online_payment");
+  if (isOnline) {
+    if (["online_payment_requested", "pending"].includes(order)) {
+      return "Awaiting Payment";
+    }
+
+    if (["pending", "processing"].includes(status)) {
+      return "Awaiting Payment";
+    }
+
     return "Paid";
   }
 
@@ -140,6 +360,7 @@ function getOrderPaymentStatusBadge(label) {
   let badgeClass = "badge-inactive";
 
   if (normalized === "paid") badgeClass = "badge-completed";
+  else if (normalized === "awaiting payment") badgeClass = "badge-pending";
   else if (normalized === "to be paid") badgeClass = "badge-pending";
   else if (normalized === "failed" || normalized === "refunded") badgeClass = "badge-cancelled";
 
@@ -166,23 +387,16 @@ function splitFullName(fullName) {
 }
 
 function getStatusBadge(status) {
-  const s = String(status || "").toLowerCase();
+  const s = normalizeOrderStatus(status);
+  const orderMeta = ORDER_STATUS_META[s];
+  if (orderMeta) {
+    return `<span class="badge ${orderMeta.badgeClass}">${escapeHtml(orderMeta.label)}</span>`;
+  }
+
   const badgeMap = {
-    cash_on_delivery_requested: "badge-pending",
-    online_payment_requested: "badge-processing",
-    cash_on_delivery_approved: "badge-pending",
-    online_payment_processed: "badge-processing",
-    waiting_for_courier: "badge-processing",
-    to_be_delivered: "badge-shipped",
     active: "badge-active",
     inactive: "badge-inactive",
-    pending: "badge-pending",
-    confirmed: "badge-processing",
-    processing: "badge-processing",
-    shipped: "badge-shipped",
-    delivered: "badge-completed",
     completed: "badge-completed",
-    cancelled: "badge-cancelled",
   };
   return `<span class="badge ${badgeMap[s] || "badge-inactive"}">${escapeHtml(toTitleCase(s))}</span>`;
 }
@@ -708,19 +922,23 @@ async function renderDashboard() {
       statusMap[String(s.status || "").toLowerCase()] = Number(s.count || 0);
     });
 
-    const statusOrder = [
-      "cash_on_delivery_requested",
-      "online_payment_requested",
-      "cash_on_delivery_approved",
-      "online_payment_processed",
-      "waiting_for_courier",
-      "shipped",
-      "to_be_delivered",
-      "delivered",
-      "cancelled",
+    const statusBuckets = [
+      { key: "pending_payment", statuses: ["online_payment_requested", "pending"], label: "Pending Payment" },
+      { key: "payment_confirmed", statuses: ["online_payment_processed", "confirmed"], label: "Payment Confirmed" },
+      { key: "cod_requested", statuses: ["cash_on_delivery_requested"], label: "COD Requested" },
+      { key: "cod_confirmed", statuses: ["cash_on_delivery_approved"], label: "COD Confirmed" },
+      { key: "processing", statuses: ["processing"], label: "Processing" },
+      { key: "waiting_for_courier", statuses: ["waiting_for_courier"], label: "Waiting for Courier" },
+      { key: "shipped", statuses: ["shipped"], label: "Shipped" },
+      { key: "out_for_delivery", statuses: ["to_be_delivered"], label: "Out for Delivery" },
+      { key: "delivered", statuses: ["delivered"], label: "Delivered" },
+      { key: "cancelled", statuses: ["cancelled"], label: "Cancelled" },
     ];
-    document.getElementById("order-status-breakdown").innerHTML = statusOrder
-      .map(s => `<div class="ost"><div class="ost-val">${statusMap[s] || 0}</div><div class="ost-lbl">${escapeHtml(toTitleCase(s))}</div></div>`)
+    document.getElementById("order-status-breakdown").innerHTML = statusBuckets
+      .map(bucket => {
+        const count = bucket.statuses.reduce((sum, status) => sum + Number(statusMap[status] || 0), 0);
+        return `<div class="ost"><div class="ost-val">${count}</div><div class="ost-lbl">${escapeHtml(bucket.label)}</div></div>`;
+      })
       .join("");
 
     const topSelling = d.top_selling || [];
@@ -1203,10 +1421,11 @@ function filterOrders(status, el) {
 }
 
 function getConfirmPill(order) {
-  if (String(order.status).toLowerCase() === "delivered") {
+  const status = normalizeOrderStatus(order?.status);
+  if (status === "delivered") {
     return '<span class="confirm-pill confirm-received" title="Customer confirmed receipt"><i class="fa-solid fa-circle-check"></i> Received</span>';
   }
-  if (["shipped", "to_be_delivered"].includes(String(order.status).toLowerCase())) {
+  if (["shipped", "to_be_delivered"].includes(status)) {
     return '<span class="confirm-pill confirm-pending" title="Waiting for customer confirmation"><i class="fa-regular fa-clock"></i> Pending</span>';
   }
   return "";
@@ -1216,14 +1435,34 @@ async function simulateCustomerReceived(id) {
   await changeOrderStatusInline(id, "delivered");
 }
 
+async function simulatePaymentConfirmation(id) {
+  await changeOrderStatusInline(id, "online_payment_processed");
+}
+
 async function changeOrderStatusInline(id, newStatus) {
   try {
-    const status = String(newStatus || "").toLowerCase();
+    const status = normalizeOrderStatus(newStatus);
+    const currentOrder = state.orders.find(o => String(o.id) === String(id));
+
+    if (currentOrder) {
+      const allowedStatuses = getAllowedOrderStatusTransitions(currentOrder);
+      if (!allowedStatuses.includes(status)) {
+        showToast("Invalid transition. Follow the next workflow step.");
+        return;
+      }
+    }
+
     await api.updateOrderStatus(id, status);
-    showToast(`Order ${id} -> ${toTitleCase(status)}`);
+    const paymentMethod = resolveOrderPaymentMethod(currentOrder?.payment_method, currentOrder?.status);
+    const statusMeta = getOrderStatusMeta(status, paymentMethod);
+    showToast(`Order ${id} -> ${statusMeta.label}`);
     await renderOrders();
     await renderDashboard();
     await refreshNotifs();
+
+    if (String(state.currentOrderId || "") === String(id)) {
+      await viewOrder(id);
+    }
   } catch (err) {
     console.error("Change order status error:", err);
     showToast(err.message || "Failed to update order status");
@@ -1236,11 +1475,21 @@ async function renderOrders(list) {
     if (!data) {
       const params = { limit: 200 };
       const normalizedFilter = String(orderFilter || "").toLowerCase();
+      const filterStatuses = getOrderFilterStatuses(normalizedFilter);
+
       if (normalizedFilter !== "all") {
-        params.status = ORDER_FILTER_STATUS_MAP[normalizedFilter] || normalizedFilter;
+        if (filterStatuses.length === 1) {
+          params.status = filterStatuses[0];
+        }
       }
+
       const res = await api.getOrders(params);
       data = res.data || [];
+
+      if (normalizedFilter !== "all" && filterStatuses.length > 1) {
+        data = data.filter(order => filterStatuses.includes(normalizeOrderStatus(order.status)));
+      }
+
       state.orders = data;
     }
 
@@ -1248,17 +1497,29 @@ async function renderOrders(list) {
     const tbody = document.getElementById("orders-tbody");
     tbody.innerHTML = paged.items.length
       ? paged.items.map(o => {
-        const status = String(o.status || "").toLowerCase();
+        const status = normalizeOrderStatus(o.status);
         const resolvedPaymentMethod = resolveOrderPaymentMethod(o.payment_method, status);
+        const statusMeta = getOrderStatusMeta(status, resolvedPaymentMethod);
         const paymentMethodLabel = formatOrderPaymentMethodLabel(resolvedPaymentMethod);
         const paymentStatusLabel = getOrderPaymentStatusLabel({
           paymentMethod: resolvedPaymentMethod,
           paymentStatus: o.payment_status,
           orderStatus: status,
         });
-        const statusesForSelect = ORDER_STATUSES.includes(status)
-          ? ORDER_STATUSES
-          : [status, ...ORDER_STATUSES];
+        const statusesForSelect = getOrderStatusSelectOptions({
+          ...o,
+          status,
+          payment_method: resolvedPaymentMethod,
+        });
+        const nextStatus = getNextOrderStatus({
+          ...o,
+          status,
+          payment_method: resolvedPaymentMethod,
+        });
+        const nextStatusMeta = nextStatus ? getOrderStatusMeta(nextStatus, resolvedPaymentMethod) : null;
+        const isTerminal = ORDER_TERMINAL_STATUSES.includes(status);
+        const canSimulatePayment = resolvedPaymentMethod !== "cod"
+          && ["online_payment_requested", "pending"].includes(status);
         return `
         <tr>
           <td><b>${escapeHtml(o.order_number || o.id)}</b></td>
@@ -1266,11 +1527,15 @@ async function renderOrders(list) {
           <td>${toCurrency(o.total_amount || 0)}</td>
           <td>
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-              <select class="status-dropdown status-${escapeHtml(status)}" onchange="changeOrderStatusInline('${o.id}', this.value)">
-                ${statusesForSelect.map(s => `<option value="${s}" ${status === s ? "selected" : ""}>${toTitleCase(s)}</option>`).join("")}
+              <select class="status-dropdown ${statusMeta.dropdownClass}" onchange="changeOrderStatusInline('${o.id}', this.value)" ${isTerminal ? "disabled" : ""}>
+                ${statusesForSelect.map(s => {
+                  const optionMeta = getOrderStatusMeta(s, resolvedPaymentMethod);
+                  return `<option value="${s}" ${status === s ? "selected" : ""}>${escapeHtml(optionMeta.label)}</option>`;
+                }).join("")}
               </select>
               ${getConfirmPill(o)}
             </div>
+            <div class="status-help-text">${escapeHtml(statusMeta.description)}</div>
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px">
               <span class="badge badge-user">${escapeHtml(paymentMethodLabel)}</span>
               ${getOrderPaymentStatusBadge(paymentStatusLabel)}
@@ -1278,6 +1543,8 @@ async function renderOrders(list) {
           </td>
           <td>${escapeHtml(o.created_at || "")}</td>
           <td style="display:flex;gap:6px;flex-wrap:wrap">
+            ${canSimulatePayment ? `<button class="btn btn-sm btn-gold" onclick="simulatePaymentConfirmation('${o.id}')">Simulate Payment Confirmed</button>` : ""}
+            ${nextStatusMeta ? `<button class="btn btn-sm btn-teal" onclick="changeOrderStatusInline('${o.id}', '${nextStatus}')">Next: ${escapeHtml(nextStatusMeta.label)}</button>` : ""}
             <button class="btn btn-sm btn-outline" onclick="viewOrder('${o.id}')">View</button>
             <button class="btn btn-sm btn-danger" onclick="archiveOrder('${o.id}')">Archive</button>
           </td>
@@ -1299,7 +1566,13 @@ async function loadOrders() {
 }
 
 async function updateOrder(id) {
-  await changeOrderStatusInline(id, "delivered");
+  const order = state.orders.find(o => String(o.id) === String(id));
+  if (!order) return;
+
+  const nextStatus = getNextOrderStatus(order);
+  if (!nextStatus) return;
+
+  await changeOrderStatusInline(id, nextStatus);
 }
 
 async function viewOrder(id) {
@@ -1320,11 +1593,29 @@ async function viewOrder(id) {
     document.getElementById("od-email").textContent = censorEmail(o.email);
     document.getElementById("od-phone").textContent = censorPhone(o.user_phone || o.shipping_phone || o.phone);
     document.getElementById("od-id").textContent = o.order_number || o.id;
+    const statusMeta = getOrderStatusMeta(o.status, resolvedPaymentMethod);
+    const nextStatus = getNextOrderStatus({
+      ...o,
+      payment_method: resolvedPaymentMethod,
+    });
+    const nextStatusMeta = nextStatus ? getOrderStatusMeta(nextStatus, resolvedPaymentMethod) : null;
+
     document.getElementById("od-status").innerHTML = `${getStatusBadge(o.status)} ${getConfirmPill(o)}`;
+    document.getElementById("od-workflow-step").textContent = statusMeta.workflowStep ? `Step ${statusMeta.workflowStep} of 7` : "Final";
+    document.getElementById("od-next-step").textContent = nextStatusMeta ? nextStatusMeta.label : "No further action";
+    document.getElementById("od-status-note").textContent = statusMeta.description;
     document.getElementById("od-payment-method").textContent = paymentMethodLabel;
     document.getElementById("od-payment-status").innerHTML = getOrderPaymentStatusBadge(paymentStatusLabel);
     document.getElementById("od-total").textContent = toCurrency(o.total_amount || 0);
     document.getElementById("od-date").textContent = o.created_at || "";
+
+    const advanceBtn = document.getElementById("od-advance-btn");
+    if (advanceBtn) {
+      advanceBtn.disabled = !nextStatus;
+      advanceBtn.textContent = nextStatusMeta
+        ? `Move to ${nextStatusMeta.label}`
+        : "No Next Step";
+    }
 
     const address = [o.shipping_address, o.shipping_city, o.shipping_province].filter(Boolean).join(", ");
     document.getElementById("od-address").textContent = censorAddress(address);
@@ -1342,34 +1633,32 @@ async function viewOrder(id) {
 }
 
 async function updateOrderStatus() {
-  const order = state.orders.find(o => String(o.id) === String(state.currentOrderId));
+  let order = state.orders.find(o => String(o.id) === String(state.currentOrderId));
+
+  if (!order && state.currentOrderId) {
+    try {
+      const res = await api.getOrderDetails(state.currentOrderId);
+      order = res.data || null;
+      if (order && !order.payment_method && order.payment?.payment_method) {
+        order.payment_method = order.payment.payment_method;
+      }
+    } catch (err) {
+      console.error("Order detail fetch error:", err);
+    }
+  }
+
   if (!order) {
     showToast("Order not found");
     return;
   }
 
-  const current = String(order.status || "").toLowerCase();
-  const nextByStatus = {
-    cash_on_delivery_requested: "waiting_for_courier",
-    online_payment_requested: "waiting_for_courier",
-    cash_on_delivery_approved: "waiting_for_courier",
-    online_payment_processed: "waiting_for_courier",
-    waiting_for_courier: "shipped",
-    shipped: "to_be_delivered",
-    to_be_delivered: "delivered",
-    pending: "waiting_for_courier",
-    confirmed: "waiting_for_courier",
-    processing: "waiting_for_courier",
-  };
-
-  const nextStatus = nextByStatus[current];
+  const nextStatus = getNextOrderStatus(order);
   if (!nextStatus) {
     showToast("Order already in final status");
     return;
   }
 
   await changeOrderStatusInline(order.id, nextStatus);
-  closeModal("modal-order");
 }
 
 async function archiveOrder(id) {

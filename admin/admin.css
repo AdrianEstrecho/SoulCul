@@ -598,11 +598,33 @@ tr:hover td { background:rgba(77,200,222,0.05); }
   min-width: 110px;
 }
 .status-dropdown:hover, .status-dropdown:focus { border-color: var(--sea-teal); }
-.status-dropdown.status-pending    { background-color:rgba(251,191,36,0.12);  color:#fbbf24; border-color:rgba(251,191,36,0.4); }
-.status-dropdown.status-processing { background-color:rgba(77,200,222,0.12);  color:var(--sea-foam); border-color:rgba(77,200,222,0.4); }
-.status-dropdown.status-shipped    { background-color:rgba(99,179,237,0.12);  color:#63b3ed; border-color:rgba(99,179,237,0.4); }
-.status-dropdown.status-completed  { background-color:rgba(74,222,128,0.12);  color:#4ade80; border-color:rgba(74,222,128,0.4); }
-.status-dropdown.status-cancelled  { background-color:rgba(232,130,106,0.12); color:var(--accent-coral); border-color:rgba(232,130,106,0.4); }
+.status-dropdown:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+.status-dropdown.status-pending-payment    { background-color:rgba(251,191,36,0.12); color:#fbbf24; border-color:rgba(251,191,36,0.4); }
+.status-dropdown.status-payment-confirmed  { background-color:rgba(77,200,222,0.12); color:var(--sea-foam); border-color:rgba(77,200,222,0.4); }
+.status-dropdown.status-cod-requested      { background-color:rgba(251,191,36,0.12); color:#f59e0b; border-color:rgba(251,191,36,0.4); }
+.status-dropdown.status-cod-confirmed      { background-color:rgba(77,200,222,0.12); color:var(--sea-foam); border-color:rgba(77,200,222,0.4); }
+.status-dropdown.status-processing         { background-color:rgba(77,200,222,0.12); color:var(--sea-foam); border-color:rgba(77,200,222,0.4); }
+.status-dropdown.status-waiting-for-courier { background-color:rgba(77,200,222,0.12); color:var(--sea-foam); border-color:rgba(77,200,222,0.4); }
+.status-dropdown.status-shipped            { background-color:rgba(99,179,237,0.12); color:#63b3ed; border-color:rgba(99,179,237,0.4); }
+.status-dropdown.status-out-for-delivery   { background-color:rgba(99,179,237,0.12); color:#63b3ed; border-color:rgba(99,179,237,0.4); }
+.status-dropdown.status-delivered          { background-color:rgba(74,222,128,0.12); color:#4ade80; border-color:rgba(74,222,128,0.4); }
+.status-dropdown.status-cancelled          { background-color:rgba(232,130,106,0.12); color:var(--accent-coral); border-color:rgba(232,130,106,0.4); }
+
+.status-help-text {
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+#od-advance-btn[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
 
 /* CUSTOMER CONFIRMATION PILLS */
 .confirm-pill {
