@@ -50,7 +50,7 @@ $normalizedPaymentMethod = match ($paymentMethod) {
     default => 'credit_card',
 };
 
-$initialPaymentStatus = $isCashOnDelivery ? 'pending' : 'processing';
+$initialPaymentStatus = 'pending';
 
 // Create order
 $stmt = $db->prepare("
@@ -146,6 +146,10 @@ try {
 }
 
 success([
+    'order_id' => (int) $orderId,
     'order_number' => $orderNumber,
-    'total_amount' => $subtotal
+    'total_amount' => $subtotal,
+    'order_status' => $initialStatus,
+    'payment_method' => $normalizedPaymentMethod,
+    'payment_status' => $initialPaymentStatus,
 ], 'Order placed successfully');

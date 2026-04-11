@@ -98,6 +98,9 @@ if ($path === '/v1/customer/orders' && $method === 'GET') {
 if ($m = matchRoute('/v1/customer/orders/:id', $path)) {
     if ($method === 'GET') { $_route = $m; require __DIR__ . '/../api/v1/customer/orders/show.php'; }
 }
+if ($m = matchRoute('/v1/customer/orders/:id/status', $path)) {
+    if ($method === 'PATCH') { $_route = $m; require __DIR__ . '/../api/v1/customer/orders/status.php'; }
+}
 if ($path === '/v1/customer/orders' && $method === 'POST') {
     require __DIR__ . '/../api/v1/customer/orders/create.php';
 }

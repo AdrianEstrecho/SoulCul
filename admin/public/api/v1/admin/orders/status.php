@@ -5,44 +5,72 @@ $db   = getDB();
 $body = getBody();
 $id   = (int) $_route['id'];
 requireFields($body, ['status']);
+require_once __DIR__ . '/../../../../../../shared/helpers/order_workflow.php';
 
-$allowed = [
-    'cash_on_delivery_requested',
-    'online_payment_requested',
-    'cash_on_delivery_approved',
-    'online_payment_processed',
-    'waiting_for_courier',
-    'shipped',
-    'to_be_delivered',
-    'delivered',
-    'cancelled',
-    // Backward-compatible legacy values
-    'pending',
-    'confirmed',
-    'processing',
-];
-$status  = strtolower($body['status']);
+$allowed = orderWorkflowAllowedStatuses();
+$status  = orderWorkflowNormalizeStatus((string) $body['status']);
 if (!in_array($status, $allowed)) {
     error('Invalid status. Allowed: ' . implode(', ', $allowed), 422);
 }
 
-$chk = $db->prepare("SELECT id, user_id, order_number, status FROM orders WHERE id = ?");
+$chk = $db->prepare("SELECT o.id, o.user_id, o.order_number, o.status,
+                            (
+                                SELECT p.payment_method
+                                FROM payments p
+                                WHERE p.order_id = o.id
+                                ORDER BY p.id DESC
+                                LIMIT 1
+                            ) AS payment_method
+                     FROM orders o
+                     WHERE o.id = ?");
 $chk->execute([$id]);
 $order = $chk->fetch();
 if (!$order) error('Order not found', 404);
 
-$old = $order['status'];
+$old = orderWorkflowNormalizeStatus((string) ($order['status'] ?? ''));
+$paymentMethod = orderWorkflowResolvePaymentMethod((string) ($order['payment_method'] ?? ''), $old);
+$allowedTransitions = orderWorkflowAllowedTransitions($old, $paymentMethod);
+
+if (!in_array($status, $allowedTransitions, true)) {
+    $allowedLabels = implode(', ', array_map('orderWorkflowFormatStatusLabel', $allowedTransitions));
+    $fromLabel = orderWorkflowFormatStatusLabel($old);
+    error("Invalid transition from {$fromLabel}. Allowed transitions: {$allowedLabels}", 422);
+}
+
+if ($status === $old) {
+    success(['status' => $status], 'Order status unchanged');
+}
+
 $db->prepare("UPDATE orders SET status = ? WHERE id = ?")->execute([$status, $id]);
 
-logAudit($db, $me['admin_id'], 'Update', 'Order', $order['order_number'],
-    "Status changed from $old → $status");
+try {
+    if ($paymentMethod !== 'cod') {
+        if ($status === 'online_payment_processed') {
+            $db->prepare("UPDATE payments SET payment_status = 'completed', processed_at = COALESCE(processed_at, NOW()) WHERE order_id = ?")
+                ->execute([$id]);
+        } elseif ($status === 'online_payment_requested' || $status === 'pending') {
+            $db->prepare("UPDATE payments SET payment_status = 'pending', processed_at = NULL WHERE order_id = ?")
+                ->execute([$id]);
+        } elseif ($status === 'cancelled') {
+            $db->prepare("UPDATE payments SET payment_status = 'refunded' WHERE order_id = ? AND payment_status = 'completed'")
+                ->execute([$id]);
+        }
+    }
+} catch (Throwable $e) {
+    error_log('Unable to sync payment status for order ' . $id . ': ' . $e->getMessage());
+}
 
-$statusLabel = ucwords(str_replace('_', ' ', $status));
+$oldLabel = orderWorkflowFormatStatusLabel($old);
+$newLabel = orderWorkflowFormatStatusLabel($status);
+
+logAudit($db, $me['admin_id'], 'Update', 'Order', $order['order_number'],
+    "Status changed from {$oldLabel} to {$newLabel}");
+
 createAdminNotification(
     $db,
     (int) $me['admin_id'],
     'Order status updated',
-    "Order {$order['order_number']} status changed to {$statusLabel}.",
+    "Order {$order['order_number']} status changed to {$newLabel}.",
     'order_status',
     [
         'order_id' => (int) $id,
@@ -57,7 +85,7 @@ if ($orderUserId > 0) {
         $db,
         $orderUserId,
         'Order update',
-        "Your order {$order['order_number']} is now {$statusLabel}.",
+        "Your order {$order['order_number']} is now {$newLabel}.",
         'order_status',
         [
             'order_id' => (int) $id,
