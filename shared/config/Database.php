@@ -1,5 +1,16 @@
 <?php
 
+/*
+Estrecho, Adrian M.
+Mansilla, Rhangel R.
+Romualdo, Jervin Paul C.
+Sostea, Joana Marie A.
+Torres, Ceazarion Sean Nicholas M.
+Tupaen, Arianne Kaye E.
+
+BSIT/IT22S1
+*/
+
 define('DB_CHARSET', 'utf8mb4');
 
 function envValue(string $key, ?string $fallback = null): ?string {

@@ -1,4 +1,15 @@
 <?php
+/*
+Estrecho, Adrian M.
+Mansilla, Rhangel R.
+Romualdo, Jervin Paul C.
+Sostea, Joana Marie A.
+Torres, Ceazarion Sean Nicholas M.
+Tupaen, Arianne Kaye E.
+
+BSIT/IT22S1
+*/
+
 // DELETE /api/v1/admin/products/:id  (soft archive)
 $me = requireAuth();
 $db = getDB();

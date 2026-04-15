@@ -1,3 +1,14 @@
+/*
+Estrecho, Adrian M.
+Mansilla, Rhangel R.
+Romualdo, Jervin Paul C.
+Sostea, Joana Marie A.
+Torres, Ceazarion Sean Nicholas M.
+Tupaen, Arianne Kaye E.
+
+BSIT/IT22S1
+*/
+
 -- SouCul Database Schema
 -- Run this in phpMyAdmin or MySQL CLI after creating the 'soucul' database
 
@@ -16,6 +27,23 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_email (email)
+);
+
+-- Password reset tokens
+CREATE TABLE IF NOT EXISTS password_resets (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  user_id INT NOT NULL,
+  token_hash CHAR(64) NOT NULL UNIQUE,
+  expires_at DATETIME NOT NULL,
+  used_at DATETIME NULL,
+  requested_ip VARCHAR(45),
+  user_agent VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_password_resets_user (user_id),
+  INDEX idx_password_resets_expires (expires_at),
+  INDEX idx_password_resets_used (used_at)
 );
 
 -- Admins (shop owners)

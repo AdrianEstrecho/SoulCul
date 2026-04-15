@@ -1,4 +1,15 @@
 <?php
+/*
+Estrecho, Adrian M.
+Mansilla, Rhangel R.
+Romualdo, Jervin Paul C.
+Sostea, Joana Marie A.
+Torres, Ceazarion Sean Nicholas M.
+Tupaen, Arianne Kaye E.
+
+BSIT/IT22S1
+*/
+
 // ═══════════════════════════════════════════════════════════
 //  SouCul Admin API — Front Controller
 //  All requests are routed here via .htaccess

@@ -1,3 +1,14 @@
+/*
+Estrecho, Adrian M.
+Mansilla, Rhangel R.
+Romualdo, Jervin Paul C.
+Sostea, Joana Marie A.
+Torres, Ceazarion Sean Nicholas M.
+Tupaen, Arianne Kaye E.
+
+BSIT/IT22S1
+*/
+
 -- ═══════════════════════════════════════════════════════════
 --  SouCul — Migration: Missing Tables & Columns
 --  Run this in phpMyAdmin or MySQL CLI on the 'soucul' database

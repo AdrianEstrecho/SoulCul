@@ -1,4 +1,15 @@
 <?php
+/*
+Estrecho, Adrian M.
+Mansilla, Rhangel R.
+Romualdo, Jervin Paul C.
+Sostea, Joana Marie A.
+Torres, Ceazarion Sean Nicholas M.
+Tupaen, Arianne Kaye E.
+
+BSIT/IT22S1
+*/
+
 // ═══════════════════════════════════════════════════════════
 //  SouCul Customer API — Front Controller
 //  All requests are routed here via .htaccess
@@ -160,6 +171,12 @@ if ($path === '/v1/customer/auth/register' && $method === 'POST') {
 }
 if ($path === '/v1/customer/auth/login' && $method === 'POST') {
     require __DIR__ . '/../api/v1/customer/auth/login.php';
+}
+if ($path === '/v1/customer/auth/forgot-password' && $method === 'POST') {
+    require __DIR__ . '/../api/v1/customer/auth/forgot_password.php';
+}
+if ($path === '/v1/customer/auth/reset-password' && $method === 'POST') {
+    require __DIR__ . '/../api/v1/customer/auth/reset_password.php';
 }
 
 // ── NOTIFICATIONS ───────────────────────────────────────────
