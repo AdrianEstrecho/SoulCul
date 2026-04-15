@@ -1,3 +1,14 @@
+/*
+Estrecho, Adrian M.
+Mansilla, Rhangel R.
+Romualdo, Jervin Paul C.
+Sostea, Joana Marie A.
+Torres, Ceazarion Sean Nicholas M.
+Tupaen, Arianne Kaye E.
+
+BSIT/IT22S1
+*/
+
 // Customer API Service Layer
 // Connects the frontend to the PHP customer backend API
 
@@ -258,6 +269,26 @@ class CustomerAPI {
     }
 
     return result;
+  }
+
+  async forgotPassword(email) {
+    return await this.request('/api/v1/customer/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+      skipAuth: true
+    });
+  }
+
+  async resetPassword(token, password, confirmPassword) {
+    return await this.request('/api/v1/customer/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({
+        token,
+        password,
+        confirm_password: confirmPassword
+      }),
+      skipAuth: true
+    });
   }
 
   logout() {

@@ -1,3 +1,14 @@
+/*
+Estrecho, Adrian M.
+Mansilla, Rhangel R.
+Romualdo, Jervin Paul C.
+Sostea, Joana Marie A.
+Torres, Ceazarion Sean Nicholas M.
+Tupaen, Arianne Kaye E.
+
+BSIT/IT22S1
+*/
+
 // Admin API Service Layer
 // Connects the frontend admin panel to the PHP backend API
 // Keep this class aligned with active calls from public/admin/admin.js.
