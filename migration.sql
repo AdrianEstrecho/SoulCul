@@ -220,7 +220,16 @@ INSERT IGNORE INTO products (
   name, slug, description, location_id, category_id, admin_id, price, size_tier, quantity_in_stock, is_active
 )
 SELECT
-  p.name,
+  CASE
+    WHEN p.slug LIKE '%-small' OR p.slug LIKE '%-medium' OR p.slug LIKE '%-large' OR p.slug LIKE '%-special' THEN CONCAT(
+      p.name,
+      ' (',
+      UPPER(LEFT(p.size_tier, 1)),
+      SUBSTRING(p.size_tier, 2),
+      ')'
+    )
+    ELSE p.name
+  END AS name,
   p.slug,
   p.description,
   l.id AS location_id,
@@ -623,6 +632,29 @@ JOIN (
   LIMIT 1
 ) a
 ;
+
+-- Ensure already-inserted variant products also show tier suffix in name.
+UPDATE products
+SET name = CONCAT(
+  TRIM(
+    REPLACE(
+      REPLACE(
+        REPLACE(
+          REPLACE(name, ' (Small)', ''),
+          ' (Medium)', ''
+        ),
+        ' (Large)', ''
+      ),
+      ' (Special)', ''
+    )
+  ),
+  ' (',
+  UPPER(LEFT(size_tier, 1)),
+  SUBSTRING(size_tier, 2),
+  ')'
+)
+WHERE size_tier IN ('small', 'medium', 'large', 'special')
+  AND (slug LIKE '%-small' OR slug LIKE '%-medium' OR slug LIKE '%-large' OR slug LIKE '%-special');
 
 -- ── 9. SEED: TEST USERS ──────────────────────────────────────────────────
 -- Converted from backend/seed.php users array
