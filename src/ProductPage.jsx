@@ -68,6 +68,24 @@ function mapProduct(row) {
   };
 }
 
+function selectFeaturedProducts(allProducts, featuredProducts, limit = 12) {
+  const cap = Math.max(1, Number(limit) || 12);
+
+  if (Array.isArray(featuredProducts) && featuredProducts.length > 0) {
+    return featuredProducts.slice(0, cap);
+  }
+
+  const flagged = Array.isArray(allProducts)
+    ? allProducts.filter((product) => product.isFeatured)
+    : [];
+
+  if (flagged.length > 0) {
+    return flagged.slice(0, cap);
+  }
+
+  return Array.isArray(allProducts) ? allProducts.slice(0, cap) : [];
+}
+
 // ── Icons ─────────────────────────────────────────────────────────────────
 const CloseIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -489,10 +507,11 @@ export default function ProductPage({ cartCount, onAddToCart, onDirectCheckout }
         const featuredRows = Array.isArray(featuredResponse?.data) ? featuredResponse.data : [];
         const mapped = allRows.map(mapProduct);
         const mappedFeatured = featuredRows.map(mapProduct);
+        const resolvedFeatured = selectFeaturedProducts(mapped, mappedFeatured, 12);
 
         if (!isMounted) return;
         setProducts(mapped);
-        setFeaturedProducts(mappedFeatured);
+        setFeaturedProducts(resolvedFeatured);
       } catch (error) {
         console.error("Failed to load products from database:", error);
         if (!isMounted) return;
