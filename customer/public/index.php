@@ -93,6 +93,9 @@ if (($path === '/health' || $path === '/v1/customer/health') && $method === 'GET
 if ($path === '/v1/customer/products' && $method === 'GET') {
     require __DIR__ . '/../api/v1/customer/products/index.php';
 }
+if ($m = matchRoute('/v1/customer/products/:id/reviews', $path)) {
+    if ($method === 'GET') { $_route = $m; require __DIR__ . '/../api/v1/customer/products/reviews.php'; }
+}
 if ($m = matchRoute('/v1/customer/products/:id', $path)) {
     if ($method === 'GET') { $_route = $m; require __DIR__ . '/../api/v1/customer/products/show.php'; }
 }
