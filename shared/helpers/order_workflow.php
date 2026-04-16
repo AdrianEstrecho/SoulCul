@@ -148,7 +148,10 @@ if (!function_exists('orderWorkflowAllowedTransitions')) {
             $allowed[] = $next;
         }
 
-        $allowed[] = 'cancelled';
+        $cannotCancelStatuses = ['shipped', 'to_be_delivered', 'delivered', 'cancelled'];
+        if (!in_array($status, $cannotCancelStatuses, true)) {
+            $allowed[] = 'cancelled';
+        }
 
         return array_values(array_unique($allowed));
     }

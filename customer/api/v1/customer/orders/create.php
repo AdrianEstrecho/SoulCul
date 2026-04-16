@@ -24,23 +24,71 @@ requireFields($body, ['shipping_address', 'shipping_city', 'shipping_province', 
 
 $db = getDB();
 
-// Get cart items
-$stmt = $db->prepare("
-    SELECT ci.quantity, p.price, p.discount_price, p.name, p.id as product_id
-    FROM cart_items ci
-    JOIN products p ON ci.product_id = p.id
-    WHERE ci.user_id = ?
-");
-$stmt->execute([$userId]);
-$cartItems = $stmt->fetchAll();
+$rawDirectItem = is_array($body['direct_item'] ?? null) ? $body['direct_item'] : null;
+$checkoutItems = [];
+$usesDirectCheckoutItem = false;
 
-if (empty($cartItems)) {
-    error('Cart is empty', 400);
+if ($rawDirectItem) {
+    $directProductId = (int) ($rawDirectItem['product_id'] ?? $rawDirectItem['id'] ?? 0);
+    $directQuantity = (int) ($rawDirectItem['quantity'] ?? $rawDirectItem['qty'] ?? 0);
+
+    if ($directProductId <= 0) {
+        error('Invalid direct checkout product.', 422);
+    }
+
+    if ($directQuantity <= 0) {
+        error('Invalid direct checkout quantity.', 422);
+    }
+
+    $productStmt = $db->prepare("
+        SELECT p.id as product_id, p.name, p.price, p.discount_price, p.quantity_in_stock
+        FROM products p
+        WHERE p.id = ?
+        LIMIT 1
+    ");
+    $productStmt->execute([$directProductId]);
+    $product = $productStmt->fetch();
+
+    if (!$product) {
+        error('Direct checkout product not found.', 404);
+    }
+
+    $stock = max(0, (int) ($product['quantity_in_stock'] ?? 0));
+    if ($stock <= 0) {
+        error('Direct checkout product is out of stock.', 422);
+    }
+
+    if ($directQuantity > $stock) {
+        error('Direct checkout quantity exceeds available stock.', 422);
+    }
+
+    $checkoutItems[] = [
+        'quantity' => $directQuantity,
+        'price' => $product['price'],
+        'discount_price' => $product['discount_price'],
+        'name' => $product['name'],
+        'product_id' => (int) $product['product_id'],
+    ];
+    $usesDirectCheckoutItem = true;
+} else {
+    // Get cart items
+    $stmt = $db->prepare("
+        SELECT ci.quantity, p.price, p.discount_price, p.name, p.id as product_id
+        FROM cart_items ci
+        JOIN products p ON ci.product_id = p.id
+        WHERE ci.user_id = ?
+    ");
+    $stmt->execute([$userId]);
+    $checkoutItems = $stmt->fetchAll();
+
+    if (empty($checkoutItems)) {
+        error('Cart is empty', 400);
+    }
 }
 
 // Calculate total
 $subtotal = 0;
-foreach ($cartItems as $item) {
+foreach ($checkoutItems as $item) {
     $price = $item['discount_price'] ?? $item['price'];
     $subtotal += $price * $item['quantity'];
 }
@@ -102,7 +150,7 @@ $stmt = $db->prepare("
     VALUES (?, ?, ?, ?, ?, ?)
 ");
 
-foreach ($cartItems as $item) {
+foreach ($checkoutItems as $item) {
     $price = $item['discount_price'] ?? $item['price'];
     $stmt->execute([
         $orderId,
@@ -114,9 +162,11 @@ foreach ($cartItems as $item) {
     ]);
 }
 
-// Clear cart
-$stmt = $db->prepare("DELETE FROM cart_items WHERE user_id = ?");
-$stmt->execute([$userId]);
+// Clear cart only for cart-based checkout.
+if (!$usesDirectCheckoutItem) {
+    $stmt = $db->prepare("DELETE FROM cart_items WHERE user_id = ?");
+    $stmt->execute([$userId]);
+}
 
 createCustomerNotification(
     $db,
