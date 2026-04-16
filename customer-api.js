@@ -342,6 +342,10 @@ class CustomerAPI {
     return await this.request(`/api/v1/customer/products/${productId}`, { skipAuth: true });
   }
 
+  async getProductReviews(productId) {
+    return await this.request(`/api/v1/customer/products/${productId}/reviews`, { skipAuth: true });
+  }
+
   async getLocations() {
     return await this.request('/api/v1/customer/locations', { skipAuth: true });
   }
