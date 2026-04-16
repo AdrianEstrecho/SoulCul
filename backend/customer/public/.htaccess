@@ -13,7 +13,7 @@ DirectoryIndex index.php
 # Hostinger production template (uncomment and replace values)
 SetEnv APP_ENV production
 SetEnv APP_DEBUG false
-SetEnv APP_URL https://api-customer.paleturquoise-gerbil-565865.hostingersite.com
+SetEnv APP_URL https://api-customer.soucul.store
 #
 SetEnv DB_CONNECTION mysql
 SetEnv DB_HOST localhost
@@ -29,16 +29,16 @@ SetEnv JWT_SECRET SoulCulSecureJWTSecretKey2026MinimumThirtyTwoCharactersRequire
 SetEnv JWT_EXPIRY_SECONDS 86400
 SetEnv JWT_EXPIRY 86400
 #
-SetEnv CORS_ALLOWED_ORIGINS "https://paleturquoise-gerbil-565865.hostingersite.com,https://www.paleturquoise-gerbil-565865.hostingersite.com,https://api-admin.paleturquoise-gerbil-565865.hostingersite.com,https://api-customer.paleturquoise-gerbil-565865.hostingersite.com"
-SetEnv CUSTOMER_APP_URL https://paleturquoise-gerbil-565865.hostingersite.com
+SetEnv CORS_ALLOWED_ORIGINS "https://api-admin.soucul.store,https://api-customer.soucul.store"
+SetEnv CUSTOMER_APP_URL https://soucul.store
 #
 # Hostinger email credentials used by forgot-password emails.
 SetEnv SMTP_HOST smtp.hostinger.com
 SetEnv SMTP_PORT 465
 SetEnv SMTP_ENCRYPTION ssl
-SetEnv SMTP_USER your-email@your-domain.com
-SetEnv SMTP_PASS replace_with_email_password
-SetEnv MAIL_FROM_EMAIL your-email@your-domain.com
+SetEnv SMTP_USER support@soucul.store
+SetEnv SMTP_PASS SouCulS1!
+SetEnv MAIL_FROM_EMAIL support@soucul.store
 SetEnv MAIL_FROM_NAME "SouCul Support"
 
 # Route API requests through customer front controller.
