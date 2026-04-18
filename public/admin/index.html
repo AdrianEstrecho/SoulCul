@@ -68,7 +68,7 @@ BSIT/IT22S1
     </div>
     <nav>
       <div class="nav-section">Main</div>
-      <div class="nav-item active" onclick="switchPanel('dashboard',this)"><span class="icon"><i class="fa-solid fa-gauge-high"></i></span>Dashboard</div>
+      <div class="nav-item active" id="dashboard-nav-item" onclick="switchPanel('dashboard',this)"><span class="icon"><i class="fa-solid fa-gauge-high"></i></span>Dashboard</div>
       <div class="nav-item" onclick="switchPanel('products',this)"><span class="icon"><i class="fa-solid fa-bag-shopping"></i></span>Product Management</div>
       <div class="nav-item" onclick="switchPanel('users',this)"><span class="icon"><i class="fa-solid fa-users"></i></span>User Management</div>
       <div class="nav-item" onclick="switchPanel('orders',this)"><span class="icon"><i class="fa-solid fa-box-open"></i></span>Order Management</div>
@@ -77,8 +77,8 @@ BSIT/IT22S1
       <div class="nav-item" onclick="switchPanel('arch-products',this)"><span class="icon"><i class="fa-solid fa-layer-group"></i></span>Archived Products</div>
       <div class="nav-item" onclick="switchPanel('arch-users',this)"><span class="icon"><i class="fa-solid fa-user-clock"></i></span>Archived Users</div>
       <div class="nav-item" onclick="switchPanel('arch-orders',this)"><span class="icon"><i class="fa-solid fa-boxes-stacked"></i></span>Archived Orders</div>
-      <div class="nav-section">Super Admin</div>
-      <div class="nav-item" onclick="switchPanel('admins',this)"><span class="icon"><i class="fa-solid fa-user-shield"></i></span>Admin Management</div>
+      <div class="nav-section" id="super-admin-nav-section">Super Admin</div>
+      <div class="nav-item" id="super-admin-nav-item" onclick="switchPanel('admins',this)"><span class="icon"><i class="fa-solid fa-user-shield"></i></span>Admin Management</div>
       <div class="nav-section">System</div>
       <div class="nav-item" onclick="switchPanel('audit',this)"><span class="icon"><i class="fa-solid fa-clipboard-list"></i></span>Audit Trail</div>
       <div class="nav-item" onclick="switchPanel('security',this)"><span class="icon"><i class="fa-solid fa-gear"></i></span>Security &amp; Settings</div>
@@ -290,7 +290,7 @@ BSIT/IT22S1
       <div class="panel" id="panel-admins">
         <div class="section-header">
           <div class="section-title">Admin <span>Management</span></div>
-          <button class="btn btn-gold" onclick="openModal('modal-admin')">+ Add Admin</button>
+          <button class="btn btn-gold" id="add-admin-btn" onclick="openModal('modal-admin')">+ Add Admin</button>
         </div>
         <div class="table-wrap">
           <table>
@@ -518,8 +518,12 @@ BSIT/IT22S1
       <div class="form-group"><label>Password *</label><input id="a-password" type="password" /></div>
     </div>
     <div class="form-group">
-      <label><input type="checkbox" id="a-superadmin" style="margin-right:6px" />Super Admin (Full System Access)</label>
-      <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Super admins can manage other admin accounts.</div>
+      <label>Role *</label>
+      <select id="a-role">
+        <option value="admin">Admin</option>
+        <option value="staff">Staff</option>
+      </select>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Only super admins can create admin accounts.</div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-admin')">Cancel</button>
