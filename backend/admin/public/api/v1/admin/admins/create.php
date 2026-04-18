@@ -27,7 +27,8 @@ if (strlen($body['password']) < 6) {
     error('Password must be at least 6 characters', 422);
 }
 
-$requestedRole = strtolower(trim($body['role'] ?? ''));
+$requestedRoleInput = $body['role'] ?? '';
+$requestedRole = is_string($requestedRoleInput) ? strtolower(trim($requestedRoleInput)) : '';
 $roleMap = [
     'admin' => 'shop_owner',
     'staff' => 'inventory_manager',
