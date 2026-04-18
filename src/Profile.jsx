@@ -106,6 +106,8 @@ const canCancelOrderStatus = (value) => {
   return !["waiting_for_courier", "shipped", "to_be_delivered", "delivered", "cancelled"].includes(normalized);
 };
 
+const normalizeCancellationReasonValue = (value) => String(value || "").toLowerCase().trim().replace(/[\s-]+/g, "_");
+
 const formatOrderStatusLabel = (value) => {
   const normalized = normalizeOrderStatus(value);
   return ORDER_STATUS_LABELS[normalized] || formatStatus(normalized || "pending");
@@ -735,7 +737,7 @@ function OrdersSection() {
       return;
     }
 
-    const selectedReason = String(cancelModal.reason || "").trim();
+    const selectedReason = normalizeCancellationReasonValue(cancelModal.reason);
     if (!ORDER_CANCELLATION_REASON_LABELS[selectedReason]) {
       setCancelModalError("Please select a cancellation reason.");
       return;
