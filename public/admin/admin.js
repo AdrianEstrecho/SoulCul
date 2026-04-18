@@ -309,17 +309,23 @@ function toTitleCase(value) {
 }
 
 function normalizeAdminRole(value) {
-  const role = String(value ?? "").toLowerCase().trim();
-  if (role === "admin" || role === "shop_owner") return "shop_owner";
-  if (role === "staff" || role === "inventory_manager") return "inventory_manager";
-  if (role === "super_admin") return "super_admin";
+  const role = String(value ?? "")
+    .toLowerCase()
+    .trim()
+    .replace(/[\s-]+/g, "_");
+  if (role === "admin" || role === "shop_owner" || role === "shopowner") return "shop_owner";
+  if (role === "staff" || role === "inventory_manager" || role === "inventorymanager") return "inventory_manager";
+  if (role === "super_admin" || role === "superadmin") return "super_admin";
   return "unknown";
 }
 
 function normalizeCreatableAdminRole(value) {
-  const role = String(value ?? "").toLowerCase().trim();
-  if (role === "admin" || role === "shop_owner") return "shop_owner";
-  if (role === "staff" || role === "inventory_manager") return "inventory_manager";
+  const role = String(value ?? "")
+    .toLowerCase()
+    .trim()
+    .replace(/[\s-]+/g, "_");
+  if (role === "admin" || role === "shop_owner" || role === "shopowner") return "shop_owner";
+  if (role === "staff" || role === "inventory_manager" || role === "inventorymanager") return "inventory_manager";
   return "";
 }
 
@@ -333,7 +339,7 @@ function adminRoleLabel(value) {
 
 function isSuperAdminSession() {
   const admin = state.admin || api.getStoredAdmin() || {};
-  return normalizeAdminRole(admin.role || "") === "super_admin";
+  return normalizeAdminRole(admin.role || admin.role_name || admin.user_role || "") === "super_admin";
 }
 
 function applySuperAdminAccess() {
