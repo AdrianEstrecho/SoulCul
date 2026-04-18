@@ -313,8 +313,9 @@ function normalizeAdminRole(value) {
     .toLowerCase()
     .trim()
     .replace(/[\s-]+/g, "_");
-  if (role === "admin" || role === "shop_owner" || role === "shopowner") return "shop_owner";
-  if (role === "staff" || role === "inventory_manager" || role === "inventorymanager") return "inventory_manager";
+  const compactRole = role.replace(/_/g, "");
+  if (role === "admin" || role === "shop_owner" || compactRole === "shopowner") return "shop_owner";
+  if (role === "staff" || role === "inventory_manager" || compactRole === "inventorymanager") return "inventory_manager";
   if (role === "super_admin" || role === "superadmin") return "super_admin";
   return "unknown";
 }
@@ -324,8 +325,9 @@ function normalizeCreatableAdminRole(value) {
     .toLowerCase()
     .trim()
     .replace(/[\s-]+/g, "_");
-  if (role === "admin" || role === "shop_owner" || role === "shopowner") return "shop_owner";
-  if (role === "staff" || role === "inventory_manager" || role === "inventorymanager") return "inventory_manager";
+  const compactRole = role.replace(/_/g, "");
+  if (role === "admin" || role === "shop_owner" || compactRole === "shopowner") return "shop_owner";
+  if (role === "staff" || role === "inventory_manager" || compactRole === "inventorymanager") return "inventory_manager";
   return "";
 }
 
@@ -337,6 +339,10 @@ function adminRoleLabel(value) {
   return toTitleCase(normalizedRole);
 }
 
+/**
+ * Extracts admin role value from known payload shapes:
+ * profile API (`role`) and legacy/auth payloads (`role_name`, `user_role`).
+ */
 function getAdminRoleValue(admin) {
   if (!admin || typeof admin !== "object") return "";
   return admin.role || admin.role_name || admin.user_role || "";
