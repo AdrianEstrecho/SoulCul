@@ -11,8 +11,16 @@ BSIT/IT22S1
 */
 
 // GET /api/v1/admin/audit
-requireSuperAdmin();
+$me = requireAdminOrHigher();
 $db = getDB();
+
+$currentRole = normalizeAdminRole((string)($me['role'] ?? ''));
+$isSuperAdmin = $currentRole === 'super_admin';
+$currentAdminId = (int)($me['admin_id'] ?? 0);
+
+if (!$isSuperAdmin && $currentAdminId <= 0) {
+    error('Unauthorized — invalid admin session', 401);
+}
 
 [$page, $limit, $offset] = getPagination();
 
@@ -28,8 +36,10 @@ if ($entity = getParam('entity')) {
     $params[] = $entity;
 }
 if ($adminId = getParam('admin_id')) {
-    $where[]  = "al.admin_id = ?";
-    $params[] = (int) $adminId;
+    if ($isSuperAdmin) {
+        $where[]  = "al.admin_id = ?";
+        $params[] = (int) $adminId;
+    }
 }
 if ($from = getParam('date_from')) {
     $where[]  = "al.created_at >= ?";
@@ -38,6 +48,12 @@ if ($from = getParam('date_from')) {
 if ($to = getParam('date_to')) {
     $where[]  = "al.created_at <= ?";
     $params[] = $to . ' 23:59:59';
+}
+
+// Admins can only view their own audit history; super admins can view all.
+if (!$isSuperAdmin) {
+    $where[] = "al.admin_id = ?";
+    $params[] = $currentAdminId;
 }
 
 $whereSQL = $where ? 'WHERE ' . implode(' AND ', $where) : '';
@@ -49,7 +65,8 @@ $total = (int) $countStmt->fetchColumn();
 $stmt = $db->prepare(
     "SELECT al.id, al.action, al.entity, al.entity_name,
             al.description, al.ip_address, al.created_at,
-            a.full_name AS admin_name, a.email AS admin_email
+            a.full_name AS admin_name, a.email AS admin_email,
+            a.role AS admin_role
      FROM audit_logs al
      LEFT JOIN admins a ON al.admin_id = a.id
      $whereSQL

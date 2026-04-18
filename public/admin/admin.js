@@ -396,7 +396,7 @@ function applyRoleAccess() {
   if (navSection) navSection.style.display = isSuperAdmin ? "" : "none";
   if (navItem) navItem.style.display = isSuperAdmin ? "" : "none";
   if (addAdminBtn) addAdminBtn.style.display = isSuperAdmin ? "" : "none";
-  if (auditNavItem) auditNavItem.style.display = isSuperAdmin ? "" : "none";
+  if (auditNavItem) auditNavItem.style.display = isAdminOrHigher ? "" : "none";
   if (addProductBtn) addProductBtn.style.display = isAdminOrHigher ? "" : "none";
   if (addVoucherBtn) addVoucherBtn.style.display = isAdminOrHigher ? "" : "none";
 
@@ -405,10 +405,12 @@ function applyRoleAccess() {
     switchPanel("dashboard", dashboardNav || null);
   }
 
-  if (!isSuperAdmin && getActivePanel() === "audit") {
+  if (!isAdminOrHigher && getActivePanel() === "audit") {
     const dashboardNav = document.getElementById("dashboard-nav-item");
     switchPanel("dashboard", dashboardNav || null);
   }
+
+  updateAuditScopeHint();
 }
 
 function resolveOrderPaymentMethod(rawMethod, rawStatus) {
@@ -502,6 +504,39 @@ function parseCancellationDetailsFromNotes(customerNotes) {
   }
 
   return { reason: "", remark: "" };
+}
+
+function getAuditActorLabel(entry) {
+  const name = String(entry?.admin_name || "").trim();
+  const email = String(entry?.admin_email || "").trim();
+  const base = name || email || "System";
+
+  if (!name && !email) {
+    return base;
+  }
+
+  const normalizedRole = normalizeAdminRole(String(entry?.admin_role || ""));
+  if (!normalizedRole || normalizedRole === "unknown") {
+    return base;
+  }
+
+  return `${base} (${adminRoleLabel(normalizedRole)})`;
+}
+
+function getAuditScopeHintText() {
+  if (isSuperAdminSession()) {
+    return "Scope: viewing all admins' audit entries";
+  }
+  if (isAdminOrHigherSession()) {
+    return "Scope: viewing only your own audit entries";
+  }
+  return "Scope: audit access requires admin role";
+}
+
+function updateAuditScopeHint() {
+  const hintEl = document.getElementById("audit-scope-hint");
+  if (!hintEl) return;
+  hintEl.textContent = getAuditScopeHintText();
 }
 
 function toCurrency(value) {
@@ -980,8 +1015,8 @@ function switchPanel(name, el) {
     return;
   }
 
-  if (name === "audit" && !isSuperAdminSession()) {
-    showToast("Forbidden — super admin access required");
+  if (name === "audit" && !isAdminOrHigherSession()) {
+    showToast("Forbidden — admin access required");
     return;
   }
 
@@ -1036,8 +1071,11 @@ async function refreshAll() {
     renderArchOrders(),
   ];
 
-  if (isSuperAdminSession()) {
+  if (isAdminOrHigherSession()) {
     tasks.push(renderAudit());
+  }
+
+  if (isSuperAdminSession()) {
     tasks.push(renderAdmins());
   }
 
@@ -1047,7 +1085,7 @@ async function refreshAll() {
 
 async function renderDashboard() {
   try {
-    const canViewAudit = isSuperAdminSession();
+    const canViewAudit = isAdminOrHigherSession();
     const [statsRes, auditRes] = await Promise.all([
       api.getDashboardStats(),
       canViewAudit ? api.getAuditLogs({ limit: 8, page: 1 }) : Promise.resolve({ data: [] }),
@@ -1112,10 +1150,14 @@ async function renderDashboard() {
     document.getElementById("activity-log").innerHTML = canViewAudit
       ? (state.audit.length
         ? state.audit
-          .map(a => `<div class="activity-item"><div class="act-dot"></div><div><div>${escapeHtml(a.description || `${a.action} ${a.entity}`)}</div><div class="act-time">${escapeHtml(a.created_at || "")}${a.admin_name ? ` · ${escapeHtml(a.admin_name)}` : ""}</div></div></div>`)
+          .map(a => {
+            const actorLabel = getAuditActorLabel(a);
+            const actorSuffix = actorLabel !== "System" ? ` · ${escapeHtml(actorLabel)}` : "";
+            return `<div class="activity-item"><div class="act-dot"></div><div><div>${escapeHtml(a.description || `${a.action} ${a.entity}`)}</div><div class="act-time">${escapeHtml(a.created_at || "")}${actorSuffix}</div></div></div>`;
+          })
           .join("")
         : '<div style="color:var(--text-muted);font-size:13px">No recent activity</div>')
-      : '<div style="color:var(--text-muted);font-size:13px">Activity is visible to super admins only.</div>';
+      : '<div style="color:var(--text-muted);font-size:13px">Activity is visible to admins only.</div>';
   } catch (err) {
     console.error("Dashboard error:", err);
   }
@@ -2185,10 +2227,12 @@ function filterAudit(action, el) {
 }
 
 async function renderAudit(list) {
-  if (!isSuperAdminSession()) {
+  updateAuditScopeHint();
+
+  if (!isAdminOrHigherSession()) {
     const tbody = document.getElementById("audit-tbody");
     if (tbody) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px">Super admin access required</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px">Admin access required</td></tr>';
     }
     updateTableFooter("audit-footer", "logs", { total: 0, start: 0, end: 0 });
     renderTablePagination("audit", "audit-pagination", 0);
@@ -2223,7 +2267,7 @@ async function renderAudit(list) {
         <td style="font-size:12px;color:var(--text-muted)">${escapeHtml(a.created_at || "")}</td>
         <td><span class="audit-action-badge ${classes[a.action] || ""}">${escapeHtml(a.action || "-")}</span></td>
         <td>${escapeHtml(a.entity || "-")}</td>
-        <td>${escapeHtml(a.admin_name || a.admin_email || "System")}</td>
+        <td>${escapeHtml(getAuditActorLabel(a))}</td>
         <td>${escapeHtml(a.description || "-")}</td>
       </tr>
     `).join("")

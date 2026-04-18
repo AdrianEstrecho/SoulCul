@@ -176,6 +176,16 @@ curl -X POST http://localhost:8000/api/v1/admin/auth/login \
 | POST | `/api/v1/admin/admins` | Create admin (super admin only) |
 | PATCH | `/api/v1/admin/admins/:id/toggle` | Toggle admin status |
 
+#### Audit Trail
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/admin/audit` | List audit logs (role-scoped) |
+
+Audit role scope:
+- `super_admin`: can view all audit entries.
+- `shop_owner` (Admin): can view only their own entries.
+- `inventory_manager` (Staff): no audit access.
+
 ## 📝 Sample API Usage
 
 ### Login

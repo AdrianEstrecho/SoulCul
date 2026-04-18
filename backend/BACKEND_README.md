@@ -110,6 +110,7 @@ curl -X GET http://localhost:8000/api/v1/admin/products \
 - `GET /api/v1/admin/admins` - List admins
 - `POST /api/v1/admin/admins` - Create admin (super admin only)
 - `PATCH /api/v1/admin/admins/:id/toggle` - Toggle admin status
+- `GET /api/v1/admin/audit` - Audit trail (super admin: all, admin: own, staff: forbidden)
 
 ## Integrating with Admin Panel
 
