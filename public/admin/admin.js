@@ -337,9 +337,14 @@ function adminRoleLabel(value) {
   return toTitleCase(normalizedRole);
 }
 
+function getAdminRoleValue(admin) {
+  if (!admin || typeof admin !== "object") return "";
+  return admin.role || admin.role_name || admin.user_role || "";
+}
+
 function isSuperAdminSession() {
   const admin = state.admin || api.getStoredAdmin() || {};
-  return normalizeAdminRole(admin.role || admin.role_name || admin.user_role || "") === "super_admin";
+  return normalizeAdminRole(getAdminRoleValue(admin)) === "super_admin";
 }
 
 function applySuperAdminAccess() {
