@@ -72,7 +72,7 @@ BSIT/IT22S1
       <div class="nav-item" onclick="switchPanel('products',this)"><span class="icon"><i class="fa-solid fa-bag-shopping"></i></span>Product Management</div>
       <div class="nav-item" onclick="switchPanel('users',this)"><span class="icon"><i class="fa-solid fa-users"></i></span>User Management</div>
       <div class="nav-item" onclick="switchPanel('orders',this)"><span class="icon"><i class="fa-solid fa-box-open"></i></span>Order Management</div>
-      <div class="nav-item" onclick="switchPanel('vouchers',this)"><span class="icon"><i class="fa-solid fa-ticket"></i></span>Voucher Management</div>
+      <div class="nav-item" id="voucher-nav-item" onclick="switchPanel('vouchers',this)"><span class="icon"><i class="fa-solid fa-ticket"></i></span>Voucher Management</div>
       <div class="nav-section">Archive</div>
       <div class="nav-item" onclick="switchPanel('arch-products',this)"><span class="icon"><i class="fa-solid fa-layer-group"></i></span>Archived Products</div>
       <div class="nav-item" onclick="switchPanel('arch-users',this)"><span class="icon"><i class="fa-solid fa-user-clock"></i></span>Archived Users</div>
@@ -80,7 +80,7 @@ BSIT/IT22S1
       <div class="nav-section" id="super-admin-nav-section">Super Admin</div>
       <div class="nav-item" id="super-admin-nav-item" onclick="switchPanel('admins',this)"><span class="icon"><i class="fa-solid fa-user-shield"></i></span>Admin Management</div>
       <div class="nav-section">System</div>
-      <div class="nav-item" onclick="switchPanel('audit',this)"><span class="icon"><i class="fa-solid fa-clipboard-list"></i></span>Audit Trail</div>
+      <div class="nav-item" id="audit-nav-item" onclick="switchPanel('audit',this)"><span class="icon"><i class="fa-solid fa-clipboard-list"></i></span>Audit Trail</div>
       <div class="nav-item" onclick="switchPanel('security',this)"><span class="icon"><i class="fa-solid fa-gear"></i></span>Security &amp; Settings</div>
     </nav>
     <div class="sidebar-footer">
@@ -155,7 +155,7 @@ BSIT/IT22S1
       <div class="panel" id="panel-products">
         <div class="section-header">
           <div class="section-title">Product <span>Management</span></div>
-          <button class="btn btn-teal" onclick="openAddProduct()">+ Add Product</button>
+          <button class="btn btn-teal" id="add-product-btn" onclick="openAddProduct()">+ Add Product</button>
         </div>
         <div class="filter-bar" id="product-filter-bar">
           <button class="filter-btn active" onclick="filterProducts('all',this)">All</button>
@@ -229,7 +229,7 @@ BSIT/IT22S1
       <div class="panel" id="panel-vouchers">
         <div class="section-header">
           <div class="section-title">Voucher <span>Management</span></div>
-          <button class="btn btn-teal" onclick="openModal('modal-voucher')">+ Add Voucher</button>
+          <button class="btn btn-teal" id="add-voucher-btn" onclick="openModal('modal-voucher')">+ Add Voucher</button>
         </div>
         <div class="table-wrap">
           <table>
@@ -553,6 +553,8 @@ BSIT/IT22S1
         <div class="info-row"><span class="key">Workflow Step</span><span id="od-workflow-step">—</span></div>
         <div class="info-row"><span class="key">Next Step</span><span id="od-next-step">—</span></div>
         <div class="info-row"><span class="key">Status Note</span><span id="od-status-note">—</span></div>
+        <div class="info-row" id="od-cancel-reason-row" style="display:none"><span class="key">Cancellation Reason</span><span id="od-cancel-reason">—</span></div>
+        <div class="info-row" id="od-cancel-remark-row" style="display:none"><span class="key">Cancellation Remark</span><span id="od-cancel-remark">—</span></div>
         <div class="info-row"><span class="key">Payment Method</span><span id="od-payment-method">—</span></div>
         <div class="info-row"><span class="key">Payment Status</span><span id="od-payment-status">—</span></div>
         <div class="info-row"><span class="key">Total</span><span id="od-total">—</span></div>

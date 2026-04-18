@@ -355,26 +355,57 @@ function getAdminRoleValue(admin) {
   return "";
 }
 
-function isSuperAdminSession() {
+function getCurrentAdminRole() {
   const activeRole = normalizeAdminRole(getAdminRoleValue(state.admin));
-  if (activeRole === "super_admin") return true;
-  if (activeRole !== "unknown") return false;
+  if (activeRole !== "unknown") return activeRole;
 
   const storedRole = normalizeAdminRole(getAdminRoleValue(api.getStoredAdmin()));
-  return storedRole === "super_admin";
+  return storedRole;
 }
 
-function applySuperAdminAccess() {
+function getAdminRoleRank(role) {
+  const normalized = normalizeAdminRole(role);
+  if (normalized === "inventory_manager") return 10;
+  if (normalized === "shop_owner") return 20;
+  if (normalized === "super_admin") return 30;
+  return 0;
+}
+
+function hasRoleAtLeast(minRole) {
+  return getAdminRoleRank(getCurrentAdminRole()) >= getAdminRoleRank(minRole);
+}
+
+function isSuperAdminSession() {
+  return hasRoleAtLeast("super_admin");
+}
+
+function isAdminOrHigherSession() {
+  return hasRoleAtLeast("shop_owner");
+}
+
+function applyRoleAccess() {
   const isSuperAdmin = isSuperAdminSession();
+  const isAdminOrHigher = isAdminOrHigherSession();
   const navSection = document.getElementById("super-admin-nav-section");
   const navItem = document.getElementById("super-admin-nav-item");
   const addAdminBtn = document.getElementById("add-admin-btn");
+  const addProductBtn = document.getElementById("add-product-btn");
+  const addVoucherBtn = document.getElementById("add-voucher-btn");
+  const auditNavItem = document.getElementById("audit-nav-item");
 
   if (navSection) navSection.style.display = isSuperAdmin ? "" : "none";
   if (navItem) navItem.style.display = isSuperAdmin ? "" : "none";
   if (addAdminBtn) addAdminBtn.style.display = isSuperAdmin ? "" : "none";
+  if (auditNavItem) auditNavItem.style.display = isSuperAdmin ? "" : "none";
+  if (addProductBtn) addProductBtn.style.display = isAdminOrHigher ? "" : "none";
+  if (addVoucherBtn) addVoucherBtn.style.display = isAdminOrHigher ? "" : "none";
 
   if (!isSuperAdmin && getActivePanel() === "admins") {
+    const dashboardNav = document.getElementById("dashboard-nav-item");
+    switchPanel("dashboard", dashboardNav || null);
+  }
+
+  if (!isSuperAdmin && getActivePanel() === "audit") {
     const dashboardNav = document.getElementById("dashboard-nav-item");
     switchPanel("dashboard", dashboardNav || null);
   }
@@ -448,6 +479,29 @@ function getOrderPaymentStatusBadge(label) {
   else if (normalized === "failed" || normalized === "refunded") badgeClass = "badge-cancelled";
 
   return `<span class="badge ${badgeClass}">${escapeHtml(label || "Not specified")}</span>`;
+}
+
+function parseCancellationDetailsFromNotes(customerNotes) {
+  const notes = String(customerNotes || "");
+  if (!notes.trim()) return { reason: "", remark: "" };
+
+  const lines = notes
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean);
+
+  for (let index = lines.length - 1; index >= 0; index -= 1) {
+    const line = lines[index];
+    const match = line.match(/^Cancellation reason:\s*(.+?)(?:\s*\|\s*Remark:\s*(.+))?$/i);
+    if (!match) continue;
+
+    return {
+      reason: String(match[1] || "").trim(),
+      remark: String(match[2] || "").trim(),
+    };
+  }
+
+  return { reason: "", remark: "" };
 }
 
 function toCurrency(value) {
@@ -926,6 +980,11 @@ function switchPanel(name, el) {
     return;
   }
 
+  if (name === "audit" && !isSuperAdminSession()) {
+    showToast("Forbidden — super admin access required");
+    return;
+  }
+
   document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
   document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
 
@@ -972,13 +1031,13 @@ async function refreshAll() {
     renderUsers(),
     renderOrders(),
     renderVouchers(),
-    renderAudit(),
     renderArchProducts(),
     renderArchUsers(),
     renderArchOrders(),
   ];
 
   if (isSuperAdminSession()) {
+    tasks.push(renderAudit());
     tasks.push(renderAdmins());
   }
 
@@ -988,9 +1047,10 @@ async function refreshAll() {
 
 async function renderDashboard() {
   try {
+    const canViewAudit = isSuperAdminSession();
     const [statsRes, auditRes] = await Promise.all([
       api.getDashboardStats(),
-      api.getAuditLogs({ limit: 8, page: 1 }),
+      canViewAudit ? api.getAuditLogs({ limit: 8, page: 1 }) : Promise.resolve({ data: [] }),
     ]);
 
     const d = statsRes.data || {};
@@ -1049,11 +1109,13 @@ async function renderDashboard() {
       : '<tr><td colspan="3" style="color:var(--text-muted)">All stock levels healthy</td></tr>';
 
     state.audit = auditRes.data || [];
-    document.getElementById("activity-log").innerHTML = state.audit.length
-      ? state.audit
-        .map(a => `<div class="activity-item"><div class="act-dot"></div><div><div>${escapeHtml(a.description || `${a.action} ${a.entity}`)}</div><div class="act-time">${escapeHtml(a.created_at || "")}${a.admin_name ? ` · ${escapeHtml(a.admin_name)}` : ""}</div></div></div>`)
-        .join("")
-      : '<div style="color:var(--text-muted);font-size:13px">No recent activity</div>';
+    document.getElementById("activity-log").innerHTML = canViewAudit
+      ? (state.audit.length
+        ? state.audit
+          .map(a => `<div class="activity-item"><div class="act-dot"></div><div><div>${escapeHtml(a.description || `${a.action} ${a.entity}`)}</div><div class="act-time">${escapeHtml(a.created_at || "")}${a.admin_name ? ` · ${escapeHtml(a.admin_name)}` : ""}</div></div></div>`)
+          .join("")
+        : '<div style="color:var(--text-muted);font-size:13px">No recent activity</div>')
+      : '<div style="color:var(--text-muted);font-size:13px">Activity is visible to super admins only.</div>';
   } catch (err) {
     console.error("Dashboard error:", err);
   }
@@ -1174,6 +1236,7 @@ function filterProducts(cat, el) {
 
 async function renderProducts(list) {
   try {
+    const canManageProducts = isAdminOrHigherSession();
     let data = list;
     if (!data) {
       const params = { limit: 200 };
@@ -1198,8 +1261,8 @@ async function renderProducts(list) {
         <td>${toCurrency(p.price)}${p.discount > 0 ? ` <span style="font-size:11px;color:var(--accent-coral)">-${p.discount}%</span>` : ""}</td>
         <td>${getStatusBadge(p.status)}</td>
         <td style="gap:6px;">
-          <button class="btn btn-sm btn-outline" onclick="editProduct('${p.id}')">Edit</button>
-          <button class="btn btn-sm btn-danger" onclick="archiveProduct('${p.id}')">Archive</button>
+          <button class="btn btn-sm btn-outline" onclick="editProduct('${p.id}')">${canManageProducts ? "Edit" : "Adjust Stock"}</button>
+          ${canManageProducts ? `<button class="btn btn-sm btn-danger" onclick="archiveProduct('${p.id}')">Archive</button>` : ""}
         </td>
       </tr>
     `).join("")
@@ -1251,7 +1314,36 @@ function clearProductImage() {
   updateImagePreviewMeta("");
 }
 
+function setProductModalAccess(canManageProducts) {
+  const restrictedFieldIds = [
+    "p-name",
+    "p-brand",
+    "p-desc",
+    "p-category",
+    "p-subcategory",
+    "p-status",
+    "p-price",
+    "p-discount",
+  ];
+
+  restrictedFieldIds.forEach(fieldId => {
+    const field = document.getElementById(fieldId);
+    if (field) field.disabled = !canManageProducts;
+  });
+
+  const uploadArea = document.getElementById("img-upload-area");
+  if (uploadArea) {
+    uploadArea.style.pointerEvents = canManageProducts ? "" : "none";
+    uploadArea.style.opacity = canManageProducts ? "" : "0.55";
+  }
+}
+
 async function uploadProductImageFile(file) {
+  if (!isAdminOrHigherSession()) {
+    showToast("Forbidden — admin access required");
+    return;
+  }
+
   if (!file || !file.type.startsWith("image/")) {
     showToast("Please choose a valid image file");
     return;
@@ -1310,6 +1402,7 @@ function updateSubcategoryOptions() {
 
 async function saveProduct() {
   const id = document.getElementById("edit-product-id").value;
+  const canManageProducts = isAdminOrHigherSession();
   const stockVal = Number(document.getElementById("p-stock").value || 0);
   const addStock = Number(document.getElementById("p-addstock").value || 0);
 
@@ -1325,6 +1418,25 @@ async function saveProduct() {
     discount: Number(document.getElementById("p-discount").value || 0),
     image: document.getElementById("p-image").value,
   };
+
+  if (!canManageProducts && !id) {
+    showToast("Forbidden — admin access required");
+    return;
+  }
+
+  if (!canManageProducts && id) {
+    try {
+      await api.updateProductInventory(id, payload.stock);
+      showToast("Inventory updated!");
+      closeModal("modal-product");
+      await renderProducts();
+      await renderDashboard();
+    } catch (err) {
+      console.error("Update inventory error:", err);
+      showToast(err.message || "Failed to update inventory");
+    }
+    return;
+  }
 
   if (!payload.name || !payload.description || !payload.category || !payload.subcategory || !payload.price) {
     showToast("Fill in required fields");
@@ -1373,10 +1485,19 @@ async function editProduct(id) {
   if (product.image) setProductImagePreview(product.image);
   else clearProductImage();
 
+  const canManageProducts = isAdminOrHigherSession();
+  setProductModalAccess(canManageProducts);
+  document.getElementById("product-modal-title").textContent = canManageProducts ? "Edit Product" : "Adjust Inventory";
+
   openModal("modal-product");
 }
 
 async function archiveProduct(id) {
+  if (!isAdminOrHigherSession()) {
+    showToast("Forbidden — admin access required");
+    return;
+  }
+
   try {
     await api.archiveProduct(id);
     showToast("Product archived");
@@ -1422,6 +1543,7 @@ function censorAddress(address) {
 
 async function renderUsers(list) {
   try {
+    const canManageUsers = isAdminOrHigherSession();
     let data = list;
     if (!data) {
       const res = await api.getUsers({ limit: 200 });
@@ -1445,7 +1567,7 @@ async function renderUsers(list) {
           <td><span class="badge badge-user">User</span></td>
           <td style="gap:6px;">
             <button class="btn btn-sm btn-outline" onclick="viewUserOrders('${u.id}')">Orders</button>
-            <button class="btn btn-sm btn-danger" onclick="archiveUser('${u.id}')">Archive</button>
+            ${canManageUsers ? `<button class="btn btn-sm btn-danger" onclick="archiveUser('${u.id}')">Archive</button>` : ""}
           </td>
         </tr>
       `;
@@ -1483,6 +1605,11 @@ async function viewUserOrders(uid) {
 }
 
 async function archiveUser(id) {
+  if (!isAdminOrHigherSession()) {
+    showToast("Forbidden — admin access required");
+    return;
+  }
+
   try {
     await api.archiveUser(id);
     showToast("User archived");
@@ -1496,6 +1623,11 @@ async function archiveUser(id) {
 }
 
 async function toggleUser(id) {
+  if (!isAdminOrHigherSession()) {
+    showToast("Forbidden — admin access required");
+    return;
+  }
+
   try {
     await api.toggleUserStatus(id);
     await renderUsers();
@@ -1564,6 +1696,7 @@ async function changeOrderStatusInline(id, newStatus) {
 
 async function renderOrders(list) {
   try {
+    const canArchiveOrders = isAdminOrHigherSession();
     let data = list;
     if (!data) {
       const params = { limit: 200 };
@@ -1635,11 +1768,11 @@ async function renderOrders(list) {
             </div>
           </td>
           <td>${escapeHtml(o.created_at || "")}</td>
-          <td style="display:flex;gap:6px;flex-wrap:wrap">
+          <td style="gap:6px;">
             ${canSimulatePayment ? `<button class="btn btn-sm btn-gold" onclick="simulatePaymentConfirmation('${o.id}')">Simulate Payment Confirmed</button>` : ""}
             ${nextStatusMeta ? `<button class="btn btn-sm btn-teal" onclick="changeOrderStatusInline('${o.id}', '${nextStatus}')">Next: ${escapeHtml(nextStatusMeta.label)}</button>` : ""}
             <button class="btn btn-sm btn-outline" onclick="viewOrder('${o.id}')">View</button>
-            <button class="btn btn-sm btn-danger" onclick="archiveOrder('${o.id}')">Archive</button>
+            ${canArchiveOrders ? `<button class="btn btn-sm btn-danger" onclick="archiveOrder('${o.id}')">Archive</button>` : ""}
           </td>
         </tr>
       `;
@@ -1687,6 +1820,8 @@ async function viewOrder(id) {
     document.getElementById("od-phone").textContent = censorPhone(o.user_phone || o.shipping_phone || o.phone);
     document.getElementById("od-id").textContent = o.order_number || o.id;
     const statusMeta = getOrderStatusMeta(o.status, resolvedPaymentMethod);
+    const cancellation = parseCancellationDetailsFromNotes(o.customer_notes);
+    const isCancelled = normalizeOrderStatus(o.status) === "cancelled";
     const nextStatus = getNextOrderStatus({
       ...o,
       payment_method: resolvedPaymentMethod,
@@ -1701,6 +1836,23 @@ async function viewOrder(id) {
     document.getElementById("od-payment-status").innerHTML = getOrderPaymentStatusBadge(paymentStatusLabel);
     document.getElementById("od-total").textContent = toCurrency(o.total_amount || 0);
     document.getElementById("od-date").textContent = o.created_at || "";
+
+    const reasonRow = document.getElementById("od-cancel-reason-row");
+    const reasonValue = document.getElementById("od-cancel-reason");
+    const remarkRow = document.getElementById("od-cancel-remark-row");
+    const remarkValue = document.getElementById("od-cancel-remark");
+
+    if (reasonRow && reasonValue) {
+      const reasonText = cancellation.reason || "Not provided";
+      reasonValue.textContent = reasonText;
+      reasonRow.style.display = isCancelled ? "" : "none";
+    }
+
+    if (remarkRow && remarkValue) {
+      const remarkText = cancellation.remark || "No additional remark";
+      remarkValue.textContent = remarkText;
+      remarkRow.style.display = isCancelled ? "" : "none";
+    }
 
     const advanceBtn = document.getElementById("od-advance-btn");
     if (advanceBtn) {
@@ -1755,6 +1907,11 @@ async function updateOrderStatus() {
 }
 
 async function archiveOrder(id) {
+  if (!isAdminOrHigherSession()) {
+    showToast("Forbidden — admin access required");
+    return;
+  }
+
   try {
     await api.archiveOrder(id);
     showToast("Order archived");
@@ -1783,6 +1940,7 @@ function voucherValueDisplay(v) {
 
 async function renderVouchers(list) {
   try {
+    const canManageVouchers = isAdminOrHigherSession();
     let data = list;
     if (!data) {
       const res = await api.getVouchers({ limit: 200 });
@@ -1803,8 +1961,8 @@ async function renderVouchers(list) {
         <td>${escapeHtml(toInputDate(v.valid_until))}</td>
         <td>${getStatusBadge(v.status || "inactive")}</td>
         <td style="display:flex;gap:6px">
-          <button class="btn btn-sm btn-outline" onclick="editVoucher('${v.id}')">Edit</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteVoucher('${v.id}')">Delete</button>
+          ${canManageVouchers ? `<button class="btn btn-sm btn-outline" onclick="editVoucher('${v.id}')">Edit</button>` : ""}
+          ${canManageVouchers ? `<button class="btn btn-sm btn-danger" onclick="deleteVoucher('${v.id}')">Delete</button>` : ""}
         </td>
       </tr>
     `).join("")
@@ -1823,6 +1981,11 @@ async function loadVouchers() {
 }
 
 async function saveVoucher() {
+  if (!isAdminOrHigherSession()) {
+    showToast("Forbidden — admin access required");
+    return;
+  }
+
   const id = document.getElementById("edit-voucher-id").value;
 
   const payload = {
@@ -1884,6 +2047,11 @@ function editVoucher(id) {
 }
 
 async function deleteVoucher(id) {
+  if (!isAdminOrHigherSession()) {
+    showToast("Forbidden — admin access required");
+    return;
+  }
+
   try {
     await api.deleteVoucher(id);
     showToast("Voucher deleted");
@@ -1895,6 +2063,11 @@ async function deleteVoucher(id) {
 }
 
 async function toggleVoucher(id) {
+  if (!isAdminOrHigherSession()) {
+    showToast("Forbidden — admin access required");
+    return;
+  }
+
   const voucher = state.vouchers.find(v => String(v.id) === String(id));
   if (!voucher) {
     showToast("Voucher not found");
@@ -2012,6 +2185,16 @@ function filterAudit(action, el) {
 }
 
 async function renderAudit(list) {
+  if (!isSuperAdminSession()) {
+    const tbody = document.getElementById("audit-tbody");
+    if (tbody) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px">Super admin access required</td></tr>';
+    }
+    updateTableFooter("audit-footer", "logs", { total: 0, start: 0, end: 0 });
+    renderTablePagination("audit", "audit-pagination", 0);
+    return;
+  }
+
   try {
     let data = list;
     if (!data) {
@@ -2056,6 +2239,7 @@ async function renderAudit(list) {
 
 async function renderArchProducts(list) {
   try {
+    const canRestore = isAdminOrHigherSession();
     let data = list;
     if (!data) {
       const res = await api.getArchivedProducts({ limit: 200 });
@@ -2066,7 +2250,7 @@ async function renderArchProducts(list) {
     const paged = paginateRows("arch-products", data);
     const tbody = document.getElementById("arch-products-tbody");
     tbody.innerHTML = paged.items.length
-      ? paged.items.map(p => `<tr><td>${buildProductCoverCell(p.image, p.name)}</td><td>${escapeHtml(p.name)}</td><td>${escapeHtml(p.category)}</td><td>${escapeHtml(p.stock)}</td><td><button class="btn btn-sm btn-teal" onclick="restoreProduct('${p.id}')">Restore</button></td></tr>`).join("")
+      ? paged.items.map(p => `<tr><td>${buildProductCoverCell(p.image, p.name)}</td><td>${escapeHtml(p.name)}</td><td>${escapeHtml(p.category)}</td><td>${escapeHtml(p.stock)}</td><td>${canRestore ? `<button class="btn btn-sm btn-teal" onclick="restoreProduct('${p.id}')">Restore</button>` : '<span style="color:var(--text-muted);font-size:12px">Read only</span>'}</td></tr>`).join("")
       : '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px">No archived products</td></tr>';
 
     updateTableFooter("arch-products-footer", "archived products", paged);
@@ -2078,6 +2262,11 @@ async function renderArchProducts(list) {
 }
 
 async function restoreProduct(id) {
+  if (!isAdminOrHigherSession()) {
+    showToast("Forbidden — admin access required");
+    return;
+  }
+
   try {
     await api.restoreArchivedProduct(id);
     showToast("Product restored!");
@@ -2092,6 +2281,7 @@ async function restoreProduct(id) {
 
 async function renderArchUsers(list) {
   try {
+    const canRestore = isAdminOrHigherSession();
     let data = list;
     if (!data) {
       const res = await api.getArchivedUsers({ limit: 200 });
@@ -2104,7 +2294,7 @@ async function renderArchUsers(list) {
     tbody.innerHTML = paged.items.length
       ? paged.items.map(u => {
         const username = (u.email || "").split("@")[0] || u.full_name || "user";
-        return `<tr><td>${escapeHtml(username)}</td><td>${escapeHtml(censorEmail(u.email))}</td><td>User</td><td><button class="btn btn-sm btn-teal" onclick="restoreUser('${u.id}')">Restore</button></td></tr>`;
+        return `<tr><td>${escapeHtml(username)}</td><td>${escapeHtml(censorEmail(u.email))}</td><td>User</td><td>${canRestore ? `<button class="btn btn-sm btn-teal" onclick="restoreUser('${u.id}')">Restore</button>` : '<span style="color:var(--text-muted);font-size:12px">Read only</span>'}</td></tr>`;
       }).join("")
       : '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:24px">No archived users</td></tr>';
 
@@ -2117,6 +2307,11 @@ async function renderArchUsers(list) {
 }
 
 async function restoreUser(id) {
+  if (!isAdminOrHigherSession()) {
+    showToast("Forbidden — admin access required");
+    return;
+  }
+
   try {
     await api.restoreArchivedUser(id);
     showToast("User restored!");
@@ -2131,6 +2326,7 @@ async function restoreUser(id) {
 
 async function renderArchOrders(list) {
   try {
+    const canRestore = isAdminOrHigherSession();
     let data = list;
     if (!data) {
       const res = await api.getArchivedOrders({ limit: 200 });
@@ -2141,7 +2337,7 @@ async function renderArchOrders(list) {
     const paged = paginateRows("arch-orders", data);
     const tbody = document.getElementById("arch-orders-tbody");
     tbody.innerHTML = paged.items.length
-      ? paged.items.map(o => `<tr><td>${escapeHtml(o.order_number || o.id)}</td><td>${escapeHtml(censorName(o.customer))}</td><td>${toCurrency(o.total_amount || 0)}</td><td>${getStatusBadge(o.status)}</td><td>${escapeHtml(o.archived_at || "")}</td><td><button class="btn btn-sm btn-teal" onclick="restoreOrder('${o.id}')">Restore</button></td></tr>`).join("")
+      ? paged.items.map(o => `<tr><td>${escapeHtml(o.order_number || o.id)}</td><td>${escapeHtml(censorName(o.customer))}</td><td>${toCurrency(o.total_amount || 0)}</td><td>${getStatusBadge(o.status)}</td><td>${escapeHtml(o.archived_at || "")}</td><td>${canRestore ? `<button class="btn btn-sm btn-teal" onclick="restoreOrder('${o.id}')">Restore</button>` : '<span style="color:var(--text-muted);font-size:12px">Read only</span>'}</td></tr>`).join("")
       : '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px">No archived orders</td></tr>';
 
     updateTableFooter("arch-orders-footer", "archived orders", paged);
@@ -2153,6 +2349,11 @@ async function renderArchOrders(list) {
 }
 
 async function restoreOrder(id) {
+  if (!isAdminOrHigherSession()) {
+    showToast("Forbidden — admin access required");
+    return;
+  }
+
   try {
     await api.restoreArchivedOrder(id);
     showToast("Order restored!");
@@ -2185,7 +2386,7 @@ async function loadSecurity() {
     document.getElementById("admin-since").textContent = state.admin.created_at || "-";
 
     updateSidebarAdmin();
-    applySuperAdminAccess();
+    applyRoleAccess();
   } catch (err) {
     console.error("Security/profile load error:", err);
     showToast(err.message || "Failed to load profile");
@@ -2292,7 +2493,21 @@ function openModal(id) {
     return;
   }
 
+  if (id === "modal-voucher" && !isAdminOrHigherSession()) {
+    showToast("Forbidden — admin access required");
+    return;
+  }
+
+  if (id === "modal-product" && !isAdminOrHigherSession()) {
+    const existingId = String(document.getElementById("edit-product-id")?.value || "").trim();
+    if (!existingId) {
+      showToast("Forbidden — admin access required");
+      return;
+    }
+  }
+
   if (id === "modal-product") {
+    setProductModalAccess(isAdminOrHigherSession());
     if (!document.getElementById("edit-product-id").value) {
       document.getElementById("product-modal-title").textContent = "Add New Product";
       ["p-name", "p-brand", "p-desc", "p-stock", "p-addstock", "p-price", "p-discount"].forEach(fieldId => {
@@ -2344,8 +2559,14 @@ function closeModal(id) {
 }
 
 function openAddProduct() {
+  if (!isAdminOrHigherSession()) {
+    showToast("Forbidden — admin access required");
+    return;
+  }
+
   document.getElementById("edit-product-id").value = "";
   document.getElementById("product-modal-title").textContent = "Add New Product";
+  setProductModalAccess(true);
   ["p-name", "p-brand", "p-desc", "p-stock", "p-addstock", "p-price", "p-discount", "p-image"].forEach(fieldId => {
     const el = document.getElementById(fieldId);
     if (el) el.value = "";

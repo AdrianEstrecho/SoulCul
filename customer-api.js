@@ -384,10 +384,13 @@ class CustomerAPI {
     return await this.request(`/api/v1/customer/orders/${orderId}`);
   }
 
-  async updateOrderStatus(orderId, status) {
+  async updateOrderStatus(orderId, status, metadata = {}) {
     return await this.request(`/api/v1/customer/orders/${orderId}/status`, {
       method: 'PATCH',
-      body: JSON.stringify({ status })
+      body: JSON.stringify({
+        status,
+        ...metadata
+      })
     });
   }
 
@@ -396,6 +399,15 @@ class CustomerAPI {
       method: 'POST',
       body: JSON.stringify(data)
     });
+  }
+
+  async validateVoucher(code, subtotal) {
+    const query = new URLSearchParams({
+      code: String(code || '').trim(),
+      subtotal: String(Number(subtotal || 0))
+    }).toString();
+
+    return await this.request(`/api/v1/customer/vouchers/validate?${query}`);
   }
 
   // Wishlist

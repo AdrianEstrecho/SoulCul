@@ -241,6 +241,13 @@ class AdminAPI {
     });
   }
 
+  async updateProductInventory(productId, quantityInStock) {
+    return await this.request(`/api/v1/admin/products/${productId}/inventory`, {
+      method: 'PATCH',
+      body: JSON.stringify({ quantity_in_stock: Number(quantityInStock || 0) })
+    });
+  }
+
   async uploadProductImage(file, metadata = {}) {
     const formData = new FormData();
     formData.append('image', file);
