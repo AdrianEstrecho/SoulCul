@@ -339,7 +339,7 @@ function applySuperAdminAccess() {
   if (addAdminBtn) addAdminBtn.style.display = isSuperAdmin ? "" : "none";
 
   if (!isSuperAdmin && getActivePanel() === "admins") {
-    const dashboardNav = document.querySelector(".nav-item[onclick=\"switchPanel('dashboard',this)\"]");
+    const dashboardNav = document.getElementById("dashboard-nav-item");
     switchPanel("dashboard", dashboardNav || null);
   }
 }
@@ -1925,9 +1925,10 @@ async function saveAdmin() {
   const phone = document.getElementById("a-phone").value.trim();
   const password = document.getElementById("a-password").value;
   const role = document.getElementById("a-role").value;
+  const allowedRoles = ["admin", "staff"];
 
   const fullName = `${firstName} ${lastName}`.trim() || username;
-  if (!email || !password || !fullName || !role) {
+  if (!email || !password || !fullName || !allowedRoles.includes(role)) {
     showToast("Fill required admin fields");
     return;
   }

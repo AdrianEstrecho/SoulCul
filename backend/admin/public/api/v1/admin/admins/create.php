@@ -29,6 +29,9 @@ if (strlen($body['password']) < 6) {
 
 $requestedRoleInput = $body['role'] ?? '';
 $requestedRole = is_string($requestedRoleInput) ? strtolower(trim($requestedRoleInput)) : '';
+if ($requestedRole === 'super_admin') {
+    error('Creating super admin accounts via this endpoint is not allowed', 422);
+}
 $roleMap = [
     'admin' => 'shop_owner',
     'staff' => 'inventory_manager',
