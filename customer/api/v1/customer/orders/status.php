@@ -29,7 +29,13 @@ if ($requestedStatus !== 'cancelled') {
     error('Customers can only update order status to Cancelled.', 403);
 }
 
-$cancellationReasonInput = strtolower(trim((string) ($body['cancellation_reason'] ?? '')));
+$cancellationReasonRaw = (string) ($body['cancellation_reason'] ?? $body['cancellation_reason_label'] ?? $body['reason'] ?? '');
+$normalizeReasonToken = static function (string $value): string {
+    $token = strtolower(trim($value));
+    $normalized = preg_replace('/[\s-]+/', '_', $token);
+    return is_string($normalized) ? $normalized : $token;
+};
+$cancellationReasonInput = $normalizeReasonToken($cancellationReasonRaw);
 $cancellationReasonMap = [
     'changed_mind' => 'Changed my mind',
     'ordered_by_mistake' => 'Ordered by mistake',
@@ -38,6 +44,30 @@ $cancellationReasonMap = [
     'payment_issue' => 'Payment issue',
     'other' => 'Other',
 ];
+
+$cancellationReasonAliases = [
+    'changed_my_mind' => 'changed_mind',
+    'change_of_mind' => 'changed_mind',
+    'ordered_mistake' => 'ordered_by_mistake',
+    'mistake' => 'ordered_by_mistake',
+    'found_a_better_price_elsewhere' => 'found_better_price',
+    'better_price' => 'found_better_price',
+    'delivery_too_long' => 'delivery_takes_too_long',
+    'takes_too_long' => 'delivery_takes_too_long',
+];
+
+$cancellationReasonLabelLookup = [];
+foreach ($cancellationReasonMap as $reasonKey => $reasonLabel) {
+    $cancellationReasonLabelLookup[$normalizeReasonToken($reasonLabel)] = $reasonKey;
+}
+
+if (!array_key_exists($cancellationReasonInput, $cancellationReasonMap)) {
+    if (array_key_exists($cancellationReasonInput, $cancellationReasonAliases)) {
+        $cancellationReasonInput = $cancellationReasonAliases[$cancellationReasonInput];
+    } elseif (array_key_exists($cancellationReasonInput, $cancellationReasonLabelLookup)) {
+        $cancellationReasonInput = $cancellationReasonLabelLookup[$cancellationReasonInput];
+    }
+}
 
 if (!array_key_exists($cancellationReasonInput, $cancellationReasonMap)) {
     error('Please select a valid cancellation reason.', 422);
