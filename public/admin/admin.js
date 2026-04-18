@@ -316,6 +316,13 @@ function normalizeAdminRole(value) {
   return "unknown";
 }
 
+function normalizeCreatableAdminRole(value) {
+  const role = String(value ?? "").toLowerCase().trim();
+  if (role === "admin" || role === "shop_owner") return "shop_owner";
+  if (role === "staff" || role === "inventory_manager") return "inventory_manager";
+  return "";
+}
+
 function adminRoleLabel(value) {
   const normalizedRole = normalizeAdminRole(value);
   if (normalizedRole === "shop_owner") return "Admin";
@@ -1925,8 +1932,9 @@ async function saveAdmin() {
   const lastName = document.getElementById("a-lname").value.trim();
   const phone = document.getElementById("a-phone").value.trim();
   const password = document.getElementById("a-password").value;
-  const role = document.getElementById("a-role").value;
-  const allowedRoles = ["admin", "staff"];
+  const selectedRole = document.getElementById("a-role").value;
+  const role = normalizeCreatableAdminRole(selectedRole);
+  const allowedRoles = ["shop_owner", "inventory_manager"];
 
   const fullName = `${firstName} ${lastName}`.trim() || username;
   if (!email || !password || !fullName) {
@@ -2287,7 +2295,7 @@ function openModal(id) {
       const el = document.getElementById(fieldId);
       if (el) el.value = "";
     });
-    document.getElementById("a-role").value = "admin";
+    document.getElementById("a-role").value = "shop_owner";
   }
 
   const modal = document.getElementById(id);
