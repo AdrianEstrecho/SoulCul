@@ -308,11 +308,15 @@ function toTitleCase(value) {
     .replace(/\b\w/g, c => c.toUpperCase());
 }
 
-function normalizeAdminRole(value) {
-  const role = String(value ?? "")
+function normalizeRoleToken(value) {
+  return String(value ?? "")
     .toLowerCase()
     .trim()
     .replace(/[\s-]+/g, "_");
+}
+
+function normalizeAdminRole(value) {
+  const role = normalizeRoleToken(value);
   // `role` keeps canonical underscore format; `compactRole` also accepts joined forms (e.g. "shopowner").
   const compactRole = role.replace(/_/g, "");
   if (role === "admin" || role === "shop_owner" || compactRole === "shopowner") return "shop_owner";
@@ -322,10 +326,7 @@ function normalizeAdminRole(value) {
 }
 
 function normalizeCreatableAdminRole(value) {
-  const role = String(value ?? "")
-    .toLowerCase()
-    .trim()
-    .replace(/[\s-]+/g, "_");
+  const role = normalizeRoleToken(value);
   const compactRole = role.replace(/_/g, "");
   if (role === "admin" || role === "shop_owner" || compactRole === "shopowner") return "shop_owner";
   if (role === "staff" || role === "inventory_manager" || compactRole === "inventorymanager") return "inventory_manager";
