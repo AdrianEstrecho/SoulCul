@@ -35,7 +35,11 @@ function requireAuth(): array {
 
 function requireSuperAdmin(): array {
     $payload = requireAuth();
-    if ($payload['role'] !== 'super_admin') {
+    $role = strtolower(trim((string)($payload['role'] ?? '')));
+    $normalizedRole = preg_replace('/[\s-]+/', '_', $role);
+    $allowedRoles = ['super_admin', 'superadmin'];
+
+    if (!in_array($normalizedRole, $allowedRoles, true)) {
         error('Forbidden — super admin access required', 403);
     }
     return $payload;
