@@ -52,8 +52,8 @@ if ($status === $old) {
     success(['status' => $status], 'Order status unchanged');
 }
 
-// Deduct stock once the order is officially shipped.
-$shouldDeductStock = ($old !== 'shipped' && $status === 'shipped');
+// Deduct stock once the order is waiting for courier pickup.
+$shouldDeductStock = ($old !== 'waiting_for_courier' && $status === 'waiting_for_courier');
 
 try {
     $db->beginTransaction();
