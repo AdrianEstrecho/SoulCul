@@ -35,6 +35,46 @@ const LOCAL_CUSTOMER_API_BASE_URL = isLocalVitePort ? 'http://localhost:8001' : 
 const API_CONFIG_ERROR_MESSAGE =
   'Customer API returned an unexpected response. Check runtime-config.js customerApiBaseUrl and backend routing.';
 
+const CANCELLATION_REASON_LABEL_MAP = {
+  changed_mind: 'Changed my mind',
+  ordered_by_mistake: 'Ordered by mistake',
+  found_better_price: 'Found a better price elsewhere',
+  delivery_takes_too_long: 'Delivery takes too long',
+  payment_issue: 'Payment issue',
+  other: 'Other'
+};
+
+function normalizeCancellationReasonToken(value) {
+  const token = String(value || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[\s-]+/g, '_');
+
+  const aliases = {
+    changed_my_mind: 'changed_mind',
+    change_of_mind: 'changed_mind',
+    ordered_mistake: 'ordered_by_mistake',
+    mistake: 'ordered_by_mistake',
+    found_a_better_price_elsewhere: 'found_better_price',
+    better_price: 'found_better_price',
+    delivery_too_long: 'delivery_takes_too_long',
+    takes_too_long: 'delivery_takes_too_long'
+  };
+
+  if (aliases[token]) return aliases[token];
+  if (Object.prototype.hasOwnProperty.call(CANCELLATION_REASON_LABEL_MAP, token)) return token;
+
+  const byLabel = Object.keys(CANCELLATION_REASON_LABEL_MAP).find((key) => {
+    const normalizedLabel = CANCELLATION_REASON_LABEL_MAP[key]
+      .toLowerCase()
+      .trim()
+      .replace(/[\s-]+/g, '_');
+    return normalizedLabel === token;
+  });
+
+  return byLabel || '';
+}
+
 const SESSION_INACTIVITY_SECONDS = 60 * 60 * 24 * 15;
 const SESSION_INACTIVITY_MS = SESSION_INACTIVITY_SECONDS * 1000;
 const SESSION_ACTIVITY_COOKIE = 'customer_last_activity_at';
@@ -385,12 +425,32 @@ class CustomerAPI {
   }
 
   async updateOrderStatus(orderId, status, metadata = {}) {
+    const normalizedStatus = String(status || '').toLowerCase().trim();
+    const payload = {
+      status: normalizedStatus,
+      ...metadata
+    };
+
+    if (normalizedStatus === 'cancelled') {
+      const rawReasonCandidate =
+        payload.cancellation_reason ||
+        payload.cancellationReason ||
+        payload.reason ||
+        payload.cancellation_reason_label ||
+        payload.cancellationReasonLabel ||
+        '';
+
+      const normalizedReason = normalizeCancellationReasonToken(rawReasonCandidate) || 'other';
+      payload.cancellation_reason = normalizedReason;
+
+      if (!payload.cancellation_reason_label) {
+        payload.cancellation_reason_label = CANCELLATION_REASON_LABEL_MAP[normalizedReason] || 'Other';
+      }
+    }
+
     return await this.request(`/api/v1/customer/orders/${orderId}/status`, {
       method: 'PATCH',
-      body: JSON.stringify({
-        status,
-        ...metadata
-      })
+      body: JSON.stringify(payload)
     });
   }
 

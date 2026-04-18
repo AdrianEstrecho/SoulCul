@@ -756,6 +756,7 @@ function OrdersSection() {
 
       const result = await customerAPI.updateOrderStatus(orderId, "cancelled", {
         cancellation_reason: selectedReason,
+        reason: selectedReason,
         cancellation_remark: String(cancelModal.remark || "").trim(),
       });
       const nextStatus = normalizeOrderStatus(result?.data?.status || "cancelled");
