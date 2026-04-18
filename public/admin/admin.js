@@ -308,18 +308,28 @@ function toTitleCase(value) {
     .replace(/\b\w/g, c => c.toUpperCase());
 }
 
+function normalizeRoleToken(value) {
+  return String(value ?? "")
+    .toLowerCase()
+    .trim()
+    .replace(/[\s-]+/g, "_");
+}
+
 function normalizeAdminRole(value) {
-  const role = String(value ?? "").toLowerCase().trim();
-  if (role === "admin" || role === "shop_owner") return "shop_owner";
-  if (role === "staff" || role === "inventory_manager") return "inventory_manager";
-  if (role === "super_admin") return "super_admin";
+  const role = normalizeRoleToken(value);
+  // `role` keeps canonical underscore format; `compactRole` also accepts joined forms (e.g. "shopowner").
+  const compactRole = role.replace(/_/g, "");
+  if (role === "admin" || role === "shop_owner" || compactRole === "shopowner") return "shop_owner";
+  if (role === "staff" || role === "inventory_manager" || compactRole === "inventorymanager") return "inventory_manager";
+  if (role === "super_admin" || compactRole === "superadmin") return "super_admin";
   return "unknown";
 }
 
 function normalizeCreatableAdminRole(value) {
-  const role = String(value ?? "").toLowerCase().trim();
-  if (role === "admin" || role === "shop_owner") return "shop_owner";
-  if (role === "staff" || role === "inventory_manager") return "inventory_manager";
+  const role = normalizeRoleToken(value);
+  const compactRole = role.replace(/_/g, "");
+  if (role === "admin" || role === "shop_owner" || compactRole === "shopowner") return "shop_owner";
+  if (role === "staff" || role === "inventory_manager" || compactRole === "inventorymanager") return "inventory_manager";
   return "";
 }
 
@@ -331,9 +341,18 @@ function adminRoleLabel(value) {
   return toTitleCase(normalizedRole);
 }
 
+/**
+ * Extracts admin role value from known payload shapes:
+ * profile API (`role`) and legacy/auth payloads (`role_name`, `user_role`).
+ */
+function getAdminRoleValue(admin) {
+  if (!admin || typeof admin !== "object") return "";
+  return admin.role || admin.role_name || admin.user_role || "";
+}
+
 function isSuperAdminSession() {
   const admin = state.admin || api.getStoredAdmin() || {};
-  return normalizeAdminRole(admin.role || "") === "super_admin";
+  return normalizeAdminRole(getAdminRoleValue(admin)) === "super_admin";
 }
 
 function applySuperAdminAccess() {
