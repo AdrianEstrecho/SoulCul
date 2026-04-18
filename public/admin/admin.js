@@ -347,15 +347,21 @@ function adminRoleLabel(value) {
  */
 function getAdminRoleValue(admin) {
   if (!admin || typeof admin !== "object") return "";
-  return admin.role || admin.role_name || admin.user_role || admin.roleName || admin.userRole || admin.admin_role || "";
+  const roleKeys = ["role", "role_name", "user_role", "roleName", "userRole", "admin_role"];
+  for (const key of roleKeys) {
+    const value = admin[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
 }
 
 function isSuperAdminSession() {
-  const roleCandidates = [state.admin, api.getStoredAdmin()]
-    .map(getAdminRoleValue)
-    .filter(Boolean);
+  const activeRole = normalizeAdminRole(getAdminRoleValue(state.admin));
+  if (activeRole === "super_admin") return true;
+  if (activeRole !== "unknown") return false;
 
-  return roleCandidates.some(role => normalizeAdminRole(role) === "super_admin");
+  const storedRole = normalizeAdminRole(getAdminRoleValue(api.getStoredAdmin()));
+  return storedRole === "super_admin";
 }
 
 function applySuperAdminAccess() {
