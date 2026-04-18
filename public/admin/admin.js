@@ -308,6 +308,42 @@ function toTitleCase(value) {
     .replace(/\b\w/g, c => c.toUpperCase());
 }
 
+function normalizeAdminRole(value) {
+  const role = String(value ?? "").toLowerCase().trim();
+  if (role === "admin" || role === "shop_owner") return "shop_owner";
+  if (role === "staff" || role === "inventory_manager") return "inventory_manager";
+  if (role === "super_admin") return "super_admin";
+  return "shop_owner";
+}
+
+function adminRoleLabel(value) {
+  const normalizedRole = normalizeAdminRole(value);
+  if (normalizedRole === "shop_owner") return "Admin";
+  if (normalizedRole === "inventory_manager") return "Staff";
+  return toTitleCase(normalizedRole);
+}
+
+function isSuperAdminSession() {
+  const admin = state.admin || api.getStoredAdmin() || {};
+  return normalizeAdminRole(admin.role || "") === "super_admin";
+}
+
+function applySuperAdminAccess() {
+  const isSuperAdmin = isSuperAdminSession();
+  const navSection = document.getElementById("super-admin-nav-section");
+  const navItem = document.getElementById("super-admin-nav-item");
+  const addAdminBtn = document.getElementById("add-admin-btn");
+
+  if (navSection) navSection.style.display = isSuperAdmin ? "" : "none";
+  if (navItem) navItem.style.display = isSuperAdmin ? "" : "none";
+  if (addAdminBtn) addAdminBtn.style.display = isSuperAdmin ? "" : "none";
+
+  if (!isSuperAdmin && getActivePanel() === "admins") {
+    const dashboardNav = document.getElementById("dashboard-nav-item");
+    switchPanel("dashboard", dashboardNav || null);
+  }
+}
+
 function resolveOrderPaymentMethod(rawMethod, rawStatus) {
   const method = String(rawMethod || "").toLowerCase();
   if (method) return method;
@@ -849,6 +885,11 @@ function setupLoginEvents() {
 }
 
 function switchPanel(name, el) {
+  if (name === "admins" && !isSuperAdminSession()) {
+    showToast("Forbidden — super admin access required");
+    return;
+  }
+
   document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
   document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
 
@@ -889,18 +930,23 @@ function renderByPanel(name) {
 }
 
 async function refreshAll() {
-  await Promise.allSettled([
+  const tasks = [
     renderDashboard(),
     renderProducts(),
     renderUsers(),
     renderOrders(),
     renderVouchers(),
-    renderAdmins(),
     renderAudit(),
     renderArchProducts(),
     renderArchUsers(),
     renderArchOrders(),
-  ]);
+  ];
+
+  if (isSuperAdminSession()) {
+    tasks.push(renderAdmins());
+  }
+
+  await Promise.allSettled(tasks);
   updateSidebarAdmin();
 }
 
@@ -1850,7 +1896,7 @@ async function renderAdmins(list) {
           <td><b>${escapeHtml(username)}</b></td>
           <td>${escapeHtml(a.email)}</td>
           <td>${escapeHtml(a.full_name || `${nameParts.firstName} ${nameParts.lastName}`.trim())}</td>
-          <td><span class="badge badge-admin">${escapeHtml(toTitleCase(a.role || "shop_owner"))}</span></td>
+          <td><span class="badge badge-admin">${escapeHtml(adminRoleLabel(a.role || "shop_owner"))}</span></td>
           <td>${escapeHtml(a.created_at || "-")}</td>
           <td>${String(a.id) !== meId ? `<button class="btn btn-sm btn-danger" onclick="deleteAdmin('${a.id}')">Toggle</button>` : '<span style="color:var(--text-muted);font-size:12px">You</span>'}</td>
         </tr>
@@ -1867,17 +1913,27 @@ async function renderAdmins(list) {
 }
 
 async function saveAdmin() {
+  if (!isSuperAdminSession()) {
+    showToast("Forbidden — super admin access required");
+    return;
+  }
+
   const username = document.getElementById("a-username").value.trim();
   const email = document.getElementById("a-email").value.trim();
   const firstName = document.getElementById("a-fname").value.trim();
   const lastName = document.getElementById("a-lname").value.trim();
   const phone = document.getElementById("a-phone").value.trim();
   const password = document.getElementById("a-password").value;
-  const isSuperAdmin = document.getElementById("a-superadmin").checked;
+  const role = document.getElementById("a-role").value;
+  const allowedRoles = ["admin", "staff"];
 
   const fullName = `${firstName} ${lastName}`.trim() || username;
   if (!email || !password || !fullName) {
     showToast("Fill required admin fields");
+    return;
+  }
+  if (!allowedRoles.includes(role)) {
+    showToast("Invalid role selected");
     return;
   }
 
@@ -1887,8 +1943,7 @@ async function saveAdmin() {
       password,
       full_name: fullName,
       phone: phone || null,
-      is_super_admin: isSuperAdmin,
-      role: isSuperAdmin ? "super_admin" : "shop_owner",
+      role,
     });
 
     showToast("Admin added!");
@@ -2088,11 +2143,12 @@ async function loadSecurity() {
     document.getElementById("prof-lname").value = parts.lastName || "";
     document.getElementById("prof-phone").value = state.admin.phone || "";
 
-    document.getElementById("acc-role").textContent = toTitleCase(state.admin.role || "shop_owner");
+    document.getElementById("acc-role").textContent = adminRoleLabel(state.admin.role || "shop_owner");
     document.getElementById("acc-id").textContent = `#${state.admin.id}`;
     document.getElementById("admin-since").textContent = state.admin.created_at || "-";
 
     updateSidebarAdmin();
+    applySuperAdminAccess();
   } catch (err) {
     console.error("Security/profile load error:", err);
     showToast(err.message || "Failed to load profile");
@@ -2151,7 +2207,7 @@ async function updateProfile() {
 function updateSidebarAdmin() {
   const admin = state.admin || api.getStoredAdmin() || {};
   const displayName = admin.full_name || (admin.email ? admin.email.split("@")[0] : "Administrator");
-  const role = toTitleCase(admin.role || "super_admin");
+  const role = adminRoleLabel(admin.role || "super_admin");
 
   const nameEl = document.getElementById("sb-admin-name");
   const roleEl = document.getElementById("sb-admin-role");
@@ -2194,6 +2250,11 @@ function globalSearch(q, options = {}) {
 }
 
 function openModal(id) {
+  if (id === "modal-admin" && !isSuperAdminSession()) {
+    showToast("Forbidden — super admin access required");
+    return;
+  }
+
   if (id === "modal-product") {
     if (!document.getElementById("edit-product-id").value) {
       document.getElementById("product-modal-title").textContent = "Add New Product";
@@ -2225,7 +2286,7 @@ function openModal(id) {
       const el = document.getElementById(fieldId);
       if (el) el.value = "";
     });
-    document.getElementById("a-superadmin").checked = false;
+    document.getElementById("a-role").value = "admin";
   }
 
   const modal = document.getElementById(id);

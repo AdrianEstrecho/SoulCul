@@ -27,13 +27,21 @@ if (strlen($body['password']) < 6) {
     error('Password must be at least 6 characters', 422);
 }
 
-$allowedRoles = ['super_admin', 'shop_owner', 'inventory_manager'];
-$role = in_array($body['role'] ?? '', $allowedRoles) ? $body['role'] : 'shop_owner';
-
-// Map frontend "Super Admin" checkbox to role
-if (!empty($body['is_super_admin'])) {
-    $role = 'super_admin';
+$requestedRoleInput = $body['role'] ?? '';
+if (!is_string($requestedRoleInput)) {
+    error('Role must be a string', 422);
 }
+$requestedRole = strtolower(trim($requestedRoleInput));
+if ($requestedRole === 'super_admin') {
+    error('Creating super admin accounts via this endpoint is not allowed', 422);
+}
+$roleMap = [
+    'admin' => 'shop_owner',
+    'staff' => 'inventory_manager',
+    'shop_owner' => 'shop_owner',
+    'inventory_manager' => 'inventory_manager',
+];
+$role = $roleMap[$requestedRole] ?? 'shop_owner';
 
 $stmt = $db->prepare(
     "INSERT INTO admins (email, password_hash, full_name, phone, role, is_active)
